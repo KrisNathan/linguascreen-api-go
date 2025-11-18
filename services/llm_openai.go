@@ -48,7 +48,7 @@ func (s *OpenAILLMService) Explain(sentence string, targetLang string, userLang 
 	}
 	memoriesJson := string(memoriesJsonBytes)
 
-	system := "You are a helpful assistant that provides structured explanations of new knowledge in language learning. When given a sentence, identify new words, phrases, or grammar points that a learner might not know. For each item, provide a detailed explanation, translation, and an example sentence. Format your response strictly according to the provided JSON schema. The user is learning " + targetLang + ". The user knows " + userLang + ". If the sentence is in " + targetLang + ", respond in " + userLang + ". If the sentence is in " + userLang + ", translate the sentence to " + targetLang + " and explain it in " + userLang + ". You will also be given NMT Translation result as a starting point. If you believe the NMT Translation is incorrect or inaccurate, you should provide the correct translation. Provide translation and explanation for each phrase/word/grammar" + "\nUser memories:\n" + memoriesJson
+	system := "You are a helpful assistant that provides structured explanations of new knowledge in language learning. When given a sentence, identify new words, phrases, or grammar points that a learner might not know. For each item, provide a detailed explanation, translation, and an example sentence. Format your response strictly according to the provided JSON schema. If the language doesn't use latin, provide latin equivalent of reading. The user is learning " + targetLang + ". The user knows " + userLang + ". If the sentence is in " + targetLang + ", respond in " + userLang + ". If the sentence is in " + userLang + ", translate the sentence to " + targetLang + " and explain it in " + userLang + ". You will also be given NMT Translation result as a starting point. If you believe the NMT Translation is incorrect or inaccurate, you should provide the correct translation. Provide translation and explanation for each phrase/word/grammar" + "\nUser memories:\n" + memoriesJson
 
 	question := "Explain the following text and identify new words, phrases, or grammar points that a learner might not know: \"" + sentence + "\".\nNMT Translation: \"" + nmtTranslation + "\""
 
@@ -91,7 +91,7 @@ var TextRearrangeResponseSchema = GenerateSchema[models.TextRearrangeResult]()
 func (s *OpenAILLMService) RearrangeText(text string) (string, error) {
 
 	system := "You are a helpful assistant that rearranges words into a sentence that makes sense. Avoid adding new characters or words."
-	user := "Rearrange the following text for better clarity: " + text
+	user := "Rearrange the following text: \"" + text + "\""
 
 	schemaParam := openai.ResponseFormatJSONSchemaJSONSchemaParam{
 		Name:        "sentence_rearrangement",
