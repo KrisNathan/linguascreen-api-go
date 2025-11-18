@@ -43,11 +43,10 @@ type RowAttributes struct {
 
 // Baseline represents the baseline of a text line
 type Baseline struct {
-	X0          float64 `json:"x0"`
-	Y0          float64 `json:"y0"`
-	X1          float64 `json:"x1"`
-	Y1          float64 `json:"y1"`
-	HasBaseline bool    `json:"has_baseline"`
+	X0 float64 `json:"x0"`
+	Y0 float64 `json:"y0"`
+	X1 float64 `json:"x1"`
+	Y1 float64 `json:"y1"`
 }
 
 // Line represents a line of text in OCR
