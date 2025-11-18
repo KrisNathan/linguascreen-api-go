@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"linguascreen/repository"
 	"linguascreen/routes"
+	"linguascreen/services"
 	"log"
 	"os"
 
@@ -49,7 +50,9 @@ func main() {
 
 	memoryRepo := repository.NewMemoryRepository(db)
 
-	ocrRoutes := routes.NewOcrRoutes()
+	ocrService := services.NewOCRService()
+
+	ocrRoutes := routes.NewOcrRoutes(ocrService)
 	explainRoutes := routes.NewExplainRoutes()
 	quizRoutes := routes.NewQuizRoutes(memoryRepo)
 

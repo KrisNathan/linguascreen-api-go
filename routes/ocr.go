@@ -5,7 +5,6 @@ import (
 	"reflect"
 
 	"linguascreen/models"
-	"linguascreen/services"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -35,12 +34,12 @@ func validateLang(fl validator.FieldLevel) bool {
 }
 
 type OcrRoutes struct {
-	ocrService *services.OCRService
+	ocrService models.OCRService
 }
 
-func NewOcrRoutes() *OcrRoutes {
+func NewOcrRoutes(ocrService models.OCRService) *OcrRoutes {
 	return &OcrRoutes{
-		ocrService: services.NewOCRService(),
+		ocrService: ocrService,
 	}
 }
 
