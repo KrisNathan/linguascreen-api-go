@@ -14,7 +14,7 @@ app.get('/status', (c) => {
 
 const UploadSchema = z.object({
   base64Image: z.string().regex(/^data:image\/([a-zA-Z]*);base64,[A-Za-z0-9+\/=]+$/),
-  lang: z.string(),
+  lang: z.array(z.string()).nonempty().or(z.string()),
 })
 
 app.post('/upload', async (c) => {
