@@ -25,12 +25,33 @@ import (
 
 func main() {
 	// mysql
+	dbHost := os.Getenv("DB_HOST")
+	if dbHost == "" {
+		dbHost = "127.0.0.1"
+	}
+	dbPort := os.Getenv("DB_PORT")
+	if dbPort == "" {
+		dbPort = "3306"
+	}
+	dbUser := os.Getenv("DB_USER")
+	if dbUser == "" {
+		dbUser = "root"
+	}
+	dbPassword := os.Getenv("DB_PASSWORD")
+	if dbPassword == "" {
+		dbPassword = "example"
+	}
+	dbName := os.Getenv("DB_NAME")
+	if dbName == "" {
+		dbName = "linguascreen"
+	}
+
 	cfg := mysql.Config{
-		User:                 "root",
-		Passwd:               "example",
+		User:                 dbUser,
+		Passwd:               dbPassword,
 		Net:                  "tcp",
-		Addr:                 "127.0.0.1:3306",
-		DBName:               "linguascreen",
+		Addr:                 dbHost + ":" + dbPort,
+		DBName:               dbName,
 		AllowNativePasswords: true,
 		MultiStatements:      true,
 	}
@@ -77,5 +98,5 @@ func main() {
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	router.Run("localhost:8080")
+	router.Run("0.0.0.0:8080")
 }

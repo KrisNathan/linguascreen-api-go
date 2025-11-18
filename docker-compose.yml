@@ -5,14 +5,46 @@ services:
   db:
     image: mysql
     restart: always
+    networks:
+      - ls-network
     ports:
         - 3306:3306
     environment:
-      MYSQL_ROOT_PASSWORD: example
-      MYSQL_DATABASE: linguascreen
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "--silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s # Gives time for initial setup before checking
     # (this is just an example, not intended to be a production configuration)
 
   tesseract-service:
     build: ./tesseract-js
+    networks:
+      - ls-network
     ports:
       - "3000:3000"
+
+  go-server:
+    build: .
+    networks:
+      - ls-network
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - TESSERACT_URL=${TESSERACT_URL}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - DEEPL_API_KEY=${DEEPL_API_KEY}
+
+networks:
+  ls-network:

@@ -5,13 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 
 	"linguascreen/models"
 )
 
 type OCRService struct {
-	// Add fields if necessary
+	tesseractURL string
 }
 
 type OCROutput struct {
@@ -19,7 +20,13 @@ type OCROutput struct {
 }
 
 func NewOCRService() *OCRService {
-	return &OCRService{}
+	tesseractURL := os.Getenv("TESSERACT_URL")
+	if tesseractURL == "" {
+		tesseractURL = "http://localhost:3000"
+	}
+	return &OCRService{
+		tesseractURL: tesseractURL,
+	}
 }
 
 type OCRRequest struct {
@@ -119,7 +126,7 @@ func (s *OCRService) ExtractTextFromBase64(base64Image string, lang []string, co
 	}
 
 	// Make HTTP POST request to the Node.js service
-	resp, err := http.Post("http://localhost:3000/upload", "application/json", bytes.NewBuffer(jsonData))
+	resp, err := http.Post(s.tesseractURL+"/upload", "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
 		return nil, fmt.Errorf("failed to call OCR service: %w", err)
 	}

@@ -19,13 +19,22 @@ Rationale for using tesseract.js:
 
 ## Setup
 
-1. **Start the database and Tesseract.js service:**
+1. **Start all services (database, Tesseract.js, and Go backend):**
    ```sh
    docker-compose up -d
    ```
 
-2. **Run the Go backend:**
+   This will start:
+   - MySQL database on port 3306
+   - Tesseract.js service on port 3000
+   - Go backend API on port 8080
+
+2. **Alternative: Run Go backend locally (requires database and Tesseract.js running in Docker):**
    ```sh
+   # Start database and Tesseract.js
+   docker-compose up -d db tesseract-service
+   
+   # Run Go backend locally
    go run .
    ```
 
