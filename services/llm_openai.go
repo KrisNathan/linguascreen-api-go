@@ -7,8 +7,9 @@ import (
 	"os"
 
 	"github.com/invopop/jsonschema"
-	"github.com/openai/openai-go" // imported as openai
-	"github.com/openai/openai-go/option"
+	"github.com/openai/openai-go/v3" // imported as openai
+	"github.com/openai/openai-go/v3/option"
+	"github.com/openai/openai-go/v3/shared"
 )
 
 type OpenAILLMService struct {
@@ -69,7 +70,7 @@ func (s *OpenAILLMService) Explain(sentence string, targetLang string, userLang 
 			},
 		},
 		// only certain models can perform structured outputs
-		Model: openai.ChatModelGPT4o2024_08_06,
+		Model: shared.ChatModelGPT5Mini,
 	})
 	if chatErr != nil {
 		return nil, chatErr
@@ -109,7 +110,7 @@ func (s *OpenAILLMService) RearrangeText(text string) (string, error) {
 				JSONSchema: schemaParam,
 			},
 		},
-		Model: openai.ChatModelGPT4o2024_08_06,
+		Model: shared.ChatModelGPT5Mini,
 	})
 	if chatErr != nil {
 		return "", chatErr
