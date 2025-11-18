@@ -51,9 +51,11 @@ func main() {
 	memoryRepo := repository.NewMemoryRepository(db)
 
 	ocrService := services.NewOCRService()
+	llmService := services.NewLLMService()
+	nmtService := services.NewDeepLTranslateService()
 
 	ocrRoutes := routes.NewOcrRoutes(ocrService)
-	explainRoutes := routes.NewExplainRoutes()
+	explainRoutes := routes.NewExplainRoutes(llmService, nmtService, memoryRepo)
 	quizRoutes := routes.NewQuizRoutes(memoryRepo)
 
 	// gin
