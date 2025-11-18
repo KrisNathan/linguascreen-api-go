@@ -17,12 +17,10 @@ COPY . .
 RUN bun -e "\
 import { createWorker } from 'tesseract.js'; \
 (async () => { \
-  console.log('Pre-downloading English language data...'); \
-  const engWorker = await createWorker('eng'); \
-  await engWorker.terminate(); \
+  console.log('Pre-downloading language data...'); \
+  const worker = await createWorker(['eng', 'vie', 'jpn', 'kor', 'chi_sim', 'chi_tra', 'jav']); \
+  await worker.terminate(); \
   console.log('Pre-downloading Japanese language data...'); \
-  const jpnWorker = await createWorker('jpn'); \
-  await jpnWorker.terminate(); \
   console.log('Language data pre-download complete'); \
 })();"
 
