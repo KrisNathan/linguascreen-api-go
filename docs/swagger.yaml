@@ -54,6 +54,8 @@ definitions:
         items:
           $ref: '#/definitions/models.MemoryInput'
         type: array
+      sentence_translation:
+        type: string
       word_explanations:
         items:
           $ref: '#/definitions/models.MemoryInput'
@@ -233,10 +235,10 @@ definitions:
     type: object
   routes.PostExplainResponse:
     properties:
+      ai_result:
+        $ref: '#/definitions/models.ExplainResult'
       nmt_translation:
         type: string
-      result:
-        $ref: '#/definitions/models.ExplainResult'
       sentence:
         type: string
     type: object

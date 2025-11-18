@@ -245,6 +245,9 @@ const docTemplate = `{
                         "$ref": "#/definitions/models.MemoryInput"
                     }
                 },
+                "sentence_translation": {
+                    "type": "string"
+                },
                 "word_explanations": {
                     "type": "array",
                     "items": {
@@ -518,11 +521,11 @@ const docTemplate = `{
         "routes.PostExplainResponse": {
             "type": "object",
             "properties": {
+                "ai_result": {
+                    "$ref": "#/definitions/models.ExplainResult"
+                },
                 "nmt_translation": {
                     "type": "string"
-                },
-                "result": {
-                    "$ref": "#/definitions/models.ExplainResult"
                 },
                 "sentence": {
                     "type": "string"
