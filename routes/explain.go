@@ -28,7 +28,9 @@ type PostExplainRequest struct {
 }
 
 type PostExplainResponse struct {
-	Result models.ExplainResult `json:"result"`
+	Sentence       string               `json:"sentence"`
+	NMTTranslation string               `json:"nmt_translation"`
+	Result         models.ExplainResult `json:"result"`
 }
 
 // Post godoc
@@ -76,5 +78,8 @@ func (r *ExplainRoutes) Post(c *gin.Context) {
 	}
 
 	// Respond
-	c.IndentedJSON(http.StatusOK, PostExplainResponse{Result: *explanation})
+	c.IndentedJSON(http.StatusOK, PostExplainResponse{
+		Sentence:       text,
+		NMTTranslation: nmtTranslation,
+		Result:         *explanation})
 }

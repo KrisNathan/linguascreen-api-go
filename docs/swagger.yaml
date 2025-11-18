@@ -233,8 +233,12 @@ definitions:
     type: object
   routes.PostExplainResponse:
     properties:
+      nmt_translation:
+        type: string
       result:
         $ref: '#/definitions/models.ExplainResult'
+      sentence:
+        type: string
     type: object
   routes.PostOcrRequest:
     properties:

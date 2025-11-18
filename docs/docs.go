@@ -518,8 +518,14 @@ const docTemplate = `{
         "routes.PostExplainResponse": {
             "type": "object",
             "properties": {
+                "nmt_translation": {
+                    "type": "string"
+                },
                 "result": {
                     "$ref": "#/definitions/models.ExplainResult"
+                },
+                "sentence": {
+                    "type": "string"
                 }
             }
         },
