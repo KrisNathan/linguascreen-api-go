@@ -18,6 +18,7 @@ type OpenAILLMService struct {
 func NewLLMService() *OpenAILLMService {
 	return &OpenAILLMService{
 		client: openai.NewClient(
+			option.WithBaseURL(os.Getenv("OPENAI_BASE_URL")),
 			option.WithAPIKey(os.Getenv("OPENAI_API_KEY")), // or set OPENAI_API_KEY in your env
 		),
 	}
