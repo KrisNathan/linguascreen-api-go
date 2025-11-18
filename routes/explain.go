@@ -22,15 +22,25 @@ func NewExplainRoutes(llmService models.LLMService, nmtService models.NMTService
 }
 
 type PostExplainRequest struct {
-	SelectedText string `json:"selected_text" binding:"required"`
-	TargetLang   string `json:"target_lang,omitempty"`
-	UserLang     string `json:"user_lang,omitempty"`
+	SelectedText string `json:"selected_text" binding:"required" example:"Hello world"`
+	TargetLang   string `json:"target_lang,omitempty" example:"es"`
+	UserLang     string `json:"user_lang,omitempty" example:"en"`
 }
 
 type PostExplainResponse struct {
 	Result models.ExplainResult `json:"result"`
 }
 
+// Post godoc
+// @Summary Explain selected text
+// @Description Explain and translate selected text using LLM and NMT
+// @Accept json
+// @Produce json
+// @Param request body PostExplainRequest true "Explain request"
+// @Success 200 {object} PostExplainResponse
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /explain [post]
 func (r *ExplainRoutes) Post(c *gin.Context) {
 	var req PostExplainRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

@@ -17,8 +17,28 @@ Rationale for using tesseract.js:
 2. Tesseract.js doesn't depend on system dependencies therefore it's much more flexible. We can pick the versions we want.
 3. This isn't for production use
 
-## Running
+## Setup
+
+1. **Start the database and Tesseract.js service:**
+   ```sh
+   docker-compose up -d
+   ```
+
+2. **Run the Go backend:**
+   ```sh
+   go run .
+   ```
+
+## API Documentation
+
+Once the server is running, you can access the Swagger UI for API documentation at:
+
+`http://localhost:8080/swagger/index.html`
+
+This provides interactive documentation for all endpoints, including request/response examples and the ability to test the API directly from the browser.
+
+Generating OpenAPI JSON
 
 ```sh
-go run main.go
+go run github.com/swaggo/swag/cmd/swag@latest init
 ```

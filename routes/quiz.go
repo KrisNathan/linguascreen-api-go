@@ -17,13 +17,23 @@ func NewQuizRoutes(memoryRepo *repository.MemoryRepository) *QuizRoutes {
 }
 
 type QuizRequest struct {
-	UserID int `uri:"user_id" binding:"required"`
+	UserID int `uri:"user_id" binding:"required" example:"1"`
 }
 
 type GetQuizResponse struct {
 	Quiz models.Quiz
 }
 
+// Get godoc
+// @Summary Get quiz for user
+// @Description Generate a quiz based on weakest memories for the user
+// @Accept json
+// @Produce json
+// @Param user_id path int true "User ID"
+// @Success 200 {object} GetQuizResponse
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /quiz/{user_id} [get]
 func (r *QuizRoutes) Get(c *gin.Context) {
 	var req QuizRequest
 	if err := c.ShouldBindUri(&req); err != nil {

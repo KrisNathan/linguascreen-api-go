@@ -1,0 +1,361 @@
+basePath: /
+definitions:
+  models.Baseline:
+    properties:
+      x0:
+        type: number
+      x1:
+        type: number
+      y0:
+        type: number
+      y1:
+        type: number
+    type: object
+  models.Bbox:
+    properties:
+      x0:
+        type: number
+      x1:
+        type: number
+      y0:
+        type: number
+      y1:
+        type: number
+    type: object
+  models.Block:
+    properties:
+      bbox:
+        $ref: '#/definitions/models.Bbox'
+      blocktype:
+        type: integer
+      confidence:
+        type: number
+      paragraphs:
+        items:
+          $ref: '#/definitions/models.Paragraph'
+        type: array
+      text:
+        type: string
+    type: object
+  models.Choice:
+    properties:
+      confidence:
+        type: number
+      text:
+        type: string
+    type: object
+  models.ExplainResult:
+    properties:
+      grammar_explanations:
+        items:
+          $ref: '#/definitions/models.MemoryInput'
+        type: array
+      phrase_explanations:
+        items:
+          $ref: '#/definitions/models.MemoryInput'
+        type: array
+      word_explanations:
+        items:
+          $ref: '#/definitions/models.MemoryInput'
+        type: array
+    type: object
+  models.Line:
+    properties:
+      baseline:
+        $ref: '#/definitions/models.Baseline'
+      bbox:
+        $ref: '#/definitions/models.Bbox'
+      confidence:
+        type: number
+      rowAttributes:
+        $ref: '#/definitions/models.RowAttributes'
+      text:
+        type: string
+      words:
+        items:
+          $ref: '#/definitions/models.Word'
+        type: array
+    type: object
+  models.MemoryInput:
+    properties:
+      content_type:
+        type: string
+      example_sentence:
+        type: string
+      explanation:
+        type: string
+      title:
+        type: string
+      translation:
+        type: string
+    type: object
+  models.Page:
+    properties:
+      blocks:
+        items:
+          $ref: '#/definitions/models.Block'
+        type: array
+      box:
+        type: string
+      confidence:
+        type: number
+      debug:
+        type: string
+      hocr:
+        type: string
+      imageBinary:
+        type: string
+      imageColor:
+        type: string
+      imageGrey:
+        type: string
+      oem:
+        type: string
+      osd:
+        type: string
+      pdf:
+        items:
+          type: integer
+        type: array
+      psm:
+        type: string
+      rotateRadians:
+        type: number
+      sd:
+        type: string
+      text:
+        type: string
+      tsv:
+        type: string
+      unlv:
+        type: string
+      version:
+        type: string
+    type: object
+  models.Paragraph:
+    properties:
+      bbox:
+        $ref: '#/definitions/models.Bbox'
+      confidence:
+        type: number
+      is_ltr:
+        type: integer
+      lines:
+        items:
+          $ref: '#/definitions/models.Line'
+        type: array
+      text:
+        type: string
+    type: object
+  models.Quiz:
+    properties:
+      questionCount:
+        type: integer
+      questions:
+        items:
+          $ref: '#/definitions/models.QuizQuestion'
+        type: array
+    type: object
+  models.QuizQuestion:
+    properties:
+      answerID:
+        type: integer
+      choices:
+        items:
+          type: string
+        type: array
+      memoryID:
+        type: integer
+      question:
+        type: string
+    type: object
+  models.RowAttributes:
+    properties:
+      ascenders:
+        type: number
+      descenders:
+        type: number
+      rowHeight:
+        type: number
+    type: object
+  models.Symbol:
+    properties:
+      bbox:
+        $ref: '#/definitions/models.Bbox'
+      confidence:
+        type: number
+      is_dropcap:
+        type: integer
+      is_subscript:
+        type: integer
+      is_superscript:
+        type: integer
+      text:
+        type: string
+    type: object
+  models.Word:
+    properties:
+      bbox:
+        $ref: '#/definitions/models.Bbox'
+      choices:
+        items:
+          $ref: '#/definitions/models.Choice'
+        type: array
+      confidence:
+        type: number
+      font_name:
+        type: string
+      symbols:
+        items:
+          $ref: '#/definitions/models.Symbol'
+        type: array
+      text:
+        type: string
+    type: object
+  routes.GetQuizResponse:
+    properties:
+      quiz:
+        $ref: '#/definitions/models.Quiz'
+    type: object
+  routes.PostExplainRequest:
+    properties:
+      selected_text:
+        example: Hello world
+        type: string
+      target_lang:
+        example: es
+        type: string
+      user_lang:
+        example: en
+        type: string
+    required:
+    - selected_text
+    type: object
+  routes.PostExplainResponse:
+    properties:
+      result:
+        $ref: '#/definitions/models.ExplainResult'
+    type: object
+  routes.PostOcrRequest:
+    properties:
+      base64Image:
+        example: base64string
+        type: string
+      confidenceThreshold:
+        example: 0.8
+        type: number
+      lang: {}
+    required:
+    - base64Image
+    - lang
+    type: object
+  routes.PostOcrResponse:
+    properties:
+      page:
+        $ref: '#/definitions/models.Page'
+      text:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: API for Linguascreen language learning app
+  title: Linguascreen API
+  version: "1.0"
+paths:
+  /explain:
+    post:
+      consumes:
+      - application/json
+      description: Explain and translate selected text using LLM and NMT
+      parameters:
+      - description: Explain request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/routes.PostExplainRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.PostExplainResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Explain selected text
+  /ocr:
+    post:
+      consumes:
+      - application/json
+      description: Extract OCR text from base64 image
+      parameters:
+      - description: OCR request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/routes.PostOcrRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.PostOcrResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Extract text from image
+  /quiz/{user_id}:
+    get:
+      consumes:
+      - application/json
+      description: Generate a quiz based on weakest memories for the user
+      parameters:
+      - description: User ID
+        in: path
+        name: user_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.GetQuizResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get quiz for user
+swagger: "2.0"

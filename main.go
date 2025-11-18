@@ -9,9 +9,19 @@ import (
 	"log"
 	"os"
 
+	_ "linguascreen/docs"
+
 	"github.com/gin-gonic/gin"
 	"github.com/go-sql-driver/mysql"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
+
+// @title Linguascreen API
+// @version 1.0
+// @description API for Linguascreen language learning app
+// @host localhost:8080
+// @BasePath /
 
 func main() {
 	// mysql
@@ -64,6 +74,8 @@ func main() {
 	router.POST("/ocr", ocrRoutes.Post)
 	router.POST("/explain", explainRoutes.Post)
 	router.GET("/quiz/:user_id", quizRoutes.Get)
+
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	router.Run("localhost:8080")
 }

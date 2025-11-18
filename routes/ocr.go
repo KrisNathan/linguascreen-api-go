@@ -44,9 +44,9 @@ func NewOcrRoutes(ocrService models.OCRService) *OcrRoutes {
 }
 
 type PostOcrRequest struct {
-	Base64Image         string      `json:"base64Image" binding:"required"`
-	Lang                interface{} `json:"lang" binding:"required" validate:"lang"`
-	ConfidenceThreshold float64     `json:"confidenceThreshold,omitempty"`
+	Base64Image         string      `json:"base64Image" binding:"required" example:"base64string"`
+	Lang                interface{} `json:"lang" binding:"required"`
+	ConfidenceThreshold float64     `json:"confidenceThreshold,omitempty" example:"0.8"`
 }
 
 type PostOcrResponse struct {
@@ -54,6 +54,16 @@ type PostOcrResponse struct {
 	Page *models.Page `json:"page"`
 }
 
+// Post godoc
+// @Summary Extract text from image
+// @Description Extract OCR text from base64 image
+// @Accept json
+// @Produce json
+// @Param request body PostOcrRequest true "OCR request"
+// @Success 200 {object} PostOcrResponse
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /ocr [post]
 func (r *OcrRoutes) Post(c *gin.Context) {
 	var req PostOcrRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
