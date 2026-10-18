@@ -1,0 +1,102 @@
+---
+title: LinguaScreen
+---
+
+erDiagram
+  User ||--o{ RefreshToken : "signed in with"
+  User ||--o{ Course : "learns"
+  Course ||--o{ Vocab : "contains"
+  Course ||--o{ Sentence : "contains"
+  Vocab ||--o{ Occurrence : "seen in"
+  Sentence ||--o{ Occurrence : "contains"
+  Course ||--o{ PracticeSession : "practiced in"
+  PracticeSession ||--o{ Question : "contains"
+  Vocab ||--o{ Question : "asked in"
+  Occurrence |o--o{ Question : "shown in"
+
+  User {
+    uuid id PK
+    text google_sub UK "Google ID token sub claim"
+    text email
+    text name
+    timestamptz created_at
+  }
+
+  RefreshToken {
+    uuid id PK
+    uuid user_id FK
+    bytea token_hash UK "SHA-256 of the token, the token itself is never stored"
+    timestamptz expires_at
+    timestamptz revoked_at "null while valid, set on rotation or sign out"
+    timestamptz created_at
+  }
+
+  %% unique (user_id, learning_language, base_language)
+  Course {
+    uuid id PK
+    uuid user_id FK
+    text base_language "native language (ISO 639-1)"
+    text learning_language "language to be learned (ISO 639-1)"
+    timestamptz created_at
+  }
+
+  %% unique (course_id, dict_form, reading)
+  %% index (course_id, last_saved_at desc, id desc) for the vocab list
+  %% progress (new / learning / known, streak, due) is derived from answered Questions, never stored
+  Vocab {
+    uuid id PK
+    uuid course_id FK
+    text dict_form "dictionary form, e.g. 読む"
+    text reading "of dict_form. JP: hiragana, CN: pinyin with tone marks"
+    text translation "first one saved, user-editable, shown in the vocab list"
+    timestamptz last_saved_at "when the latest occurrence was added, orders the vocab list"
+    timestamptz created_at
+  }
+
+  %% unique (course_id, text_hash)
+  Sentence {
+    uuid id PK
+    uuid course_id FK
+    text text "normalized"
+    bytea text_hash "SHA-256 of text, 32 bytes, computed by the application"
+    text translation "whole sentence, in base_language"
+    timestamptz created_at
+  }
+
+  %% unique (vocab_id, sentence_id, span_start)
+  Occurrence {
+    uuid id PK
+    uuid vocab_id FK
+    uuid sentence_id FK
+    int span_start "UTF-16 code units in Sentence.text"
+    int span_end "UTF-16 code units, exclusive"
+    text surface "as it appears in the sentence, e.g. 読みます"
+    text translation "meaning in this sentence, shown in the quiz"
+    bool from_part "saved from a part of a compound, never used for fill-in-the-blank"
+    timestamptz created_at
+  }
+
+  %% unique (course_id, kind) where closed_at is null
+  PracticeSession {
+    uuid id PK
+    uuid course_id FK
+    text kind "quiz | flash_card"
+    timestamptz created_at
+    timestamptz closed_at "completed or expired, null while open"
+  }
+
+  %% answered questions are the only source of scheduling
+  %% index (vocab_id, answered_at) where answered_at is not null
+  Question {
+    uuid id PK
+    uuid session_id FK
+    int position "order in the session"
+    text type "fill_blank | translation | reading | flash_card"
+    uuid vocab_id FK
+    uuid occurrence_id FK "fill_blank only"
+    text_array options "quiz only, stored as text"
+    int correct_index "quiz only, never sent before answering"
+    int answered_index "quiz only, null until answered"
+    bool correct "null until answered"
+    timestamptz answered_at "server time, null until answered"
+  }
