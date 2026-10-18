@@ -1,0 +1,45 @@
+package usecase
+
+import (
+	"context"
+
+	"github.com/KrisNathan/linguascreen-api-go/internal/application/port"
+	"github.com/KrisNathan/linguascreen-api-go/internal/application/service"
+	"github.com/KrisNathan/linguascreen-api-go/internal/domain/model"
+	"github.com/KrisNathan/linguascreen-api-go/internal/domain/repo"
+	errs "github.com/KrisNathan/linguascreen-api-go/internal/errors"
+)
+
+type SignInResult struct {
+	User   *model.User
+	Tokens *service.TokenPair
+}
+
+type SignIn struct {
+	verifier port.IDTokenVerifier
+	userRepo repo.UserRepo
+	session  *service.Session
+}
+
+func NewSignIn(verifier port.IDTokenVerifier, userRepo repo.UserRepo, session *service.Session) *SignIn {
+	return &SignIn{verifier: verifier, userRepo: userRepo, session: session}
+}
+
+func (s *SignIn) Exec(ctx context.Context, idToken string) (*SignInResult, error) {
+	identity, err := s.verifier.Verify(ctx, idToken)
+	if err != nil {
+		return nil, errs.ErrUnauthorized
+	}
+
+	user, err := s.userRepo.Upsert(ctx, identity.Subject, identity.Email, identity.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	tokens, err := s.session.Issue(ctx, user.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &SignInResult{User: user, Tokens: tokens}, nil
+}

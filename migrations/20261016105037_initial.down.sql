@@ -1,0 +1,8 @@
+DROP TABLE IF EXISTS questions;
+DROP TABLE IF EXISTS practice_sessions;
+DROP TABLE IF EXISTS occurrences;
+DROP TABLE IF EXISTS sentences;
+DROP TABLE IF EXISTS vocabs;
+DROP TABLE IF EXISTS courses;
+DROP TABLE IF EXISTS refresh_tokens;
+DROP TABLE IF EXISTS users;
