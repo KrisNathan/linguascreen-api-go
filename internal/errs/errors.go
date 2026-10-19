@@ -6,6 +6,7 @@ var (
 	ErrNotFound     = errors.New("not found")
 	ErrUnauthorized = errors.New("unauthorized")
 	ErrInvalidInput = errors.New("invalid input")
+	ErrUpstream     = errors.New("upstream error")
 )
 
 // hintError adds a message that is safe to show clients.

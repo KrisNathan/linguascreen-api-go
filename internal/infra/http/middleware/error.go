@@ -17,6 +17,7 @@ var publicErrors = []struct {
 	{errs.ErrInvalidInput, http.StatusBadRequest},
 	{errs.ErrUnauthorized, http.StatusUnauthorized},
 	{errs.ErrNotFound, http.StatusNotFound},
+	{errs.ErrUpstream, http.StatusBadGateway},
 }
 
 func MapErrors() gin.HandlerFunc {

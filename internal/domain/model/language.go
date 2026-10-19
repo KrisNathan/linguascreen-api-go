@@ -28,5 +28,4 @@ func NewLanguage(code string) (Language, error) {
 
 func (l Language) String() string { return l.code }
 
-// Name returns the English name of the language, e.g. "Japanese".
 func (l Language) Name() string { return supportedLanguages[l.code] }

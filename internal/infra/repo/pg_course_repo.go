@@ -34,7 +34,6 @@ func (r *PgCourseRepo) Create(ctx context.Context, userID string, baseLanguage, 
 	return &c, nil
 }
 
-// List returns the user's courses, oldest first.
 func (r *PgCourseRepo) List(ctx context.Context, userID string) ([]*model.Course, error) {
 	rows, err := r.pool.Query(ctx,
 		`SELECT id::text, user_id::text, base_language, learning_language, created_at

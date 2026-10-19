@@ -8,11 +8,12 @@ import (
 )
 
 type Handlers struct {
-	SignIn       *handler.SignIn
-	RefreshToken *handler.RefreshToken
-	SignOut      *handler.SignOut
-	CreateCourse *handler.CreateCourse
-	ListCourse   *handler.ListCourse
+	SignIn          *handler.SignIn
+	RefreshToken    *handler.RefreshToken
+	SignOut         *handler.SignOut
+	CreateCourse    *handler.CreateCourse
+	ListCourse      *handler.ListCourse
+	AnalyzeSentence *handler.AnalyzeSentence
 }
 
 func NewRouter(h Handlers, tokenService port.TokenService, isProd bool) *gin.Engine {
@@ -37,6 +38,7 @@ func NewRouter(h Handlers, tokenService port.TokenService, isProd bool) *gin.Eng
 	api := router.Group("/", middleware.RequiresAuth(tokenService))
 	api.POST("/courses", h.CreateCourse.Handle)
 	api.GET("/courses", h.ListCourse.Handle)
+	api.POST("/analyze", h.AnalyzeSentence.Handle)
 
 	return router
 }

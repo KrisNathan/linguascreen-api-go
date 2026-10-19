@@ -27,7 +27,6 @@ func (uc *CreateCourse) Exec(ctx context.Context, userID, baseLanguage, learning
 		return nil, err
 	}
 
-	// Compared after normalizing, so "en" and "eng" count as the same language.
 	if base == learning {
 		return nil, errs.WithHint(errs.ErrInvalidInput, "base_language and learning_language must differ")
 	}

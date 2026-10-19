@@ -17,6 +17,7 @@ import (
 	httpinfra "github.com/KrisNathan/linguascreen-api-go/internal/infra/http"
 	"github.com/KrisNathan/linguascreen-api-go/internal/infra/http/handler"
 	jwtinfra "github.com/KrisNathan/linguascreen-api-go/internal/infra/jwt"
+	openaiinfra "github.com/KrisNathan/linguascreen-api-go/internal/infra/openai"
 	repoinfra "github.com/KrisNathan/linguascreen-api-go/internal/infra/repo"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
@@ -44,6 +45,7 @@ func main() {
 	DATABASE_URL := ReadConfig("/etc/secrets", "POSTGRES_URL")
 	OPENAI_API_KEY := ReadConfig("/etc/secrets", "OPENAI_API_KEY")
 	OPENAI_API_BASE_URL := ReadConfig("/etc/config", "OPENAI_API_BASE_URL")
+	OPENAI_MODEL := ReadConfig("/etc/config", "OPENAI_MODEL")
 	GOOGLE_CLIENT_AUD := ReadConfig("/etc/config", "GOOGLE_CLIENT_AUD")
 	PROD := ReadConfig("/etc/config", "PROD") == "1"
 
@@ -70,7 +72,7 @@ func main() {
 		log.Fatalf("google verifier: %v", err)
 	}
 
-	openai.NewClient(
+	openaiClient := openai.NewClient(
 		option.WithBaseURL(OPENAI_API_BASE_URL),
 		option.WithAPIKey(OPENAI_API_KEY),
 	)
@@ -78,14 +80,16 @@ func main() {
 	userRepo := repoinfra.NewPgUserRepo(pool)
 	refreshTokenRepo := repoinfra.NewPgRefreshTokenRepo(pool)
 	courseRepo := repoinfra.NewPgCourseRepo(pool)
+	sentenceAnalyzer := openaiinfra.NewSentenceAnalyzer(&openaiClient, OPENAI_MODEL)
 	session := service.NewSession(refreshTokenRepo, tokenService)
 
 	router := httpinfra.NewRouter(httpinfra.Handlers{
-		SignIn:       handler.NewSignIn(usecase.NewSignIn(idTokenVerifier, userRepo, session)),
-		RefreshToken: handler.NewRefreshToken(usecase.NewRefreshToken(refreshTokenRepo, session)),
-		SignOut:      handler.NewSignOut(usecase.NewSignOut(refreshTokenRepo)),
-		CreateCourse: handler.NewCreateCourse(usecase.NewCreateCourse(courseRepo)),
-		ListCourse:   handler.NewListCourse(usecase.NewListCourse(courseRepo)),
+		SignIn:          handler.NewSignIn(usecase.NewSignIn(idTokenVerifier, userRepo, session)),
+		RefreshToken:    handler.NewRefreshToken(usecase.NewRefreshToken(refreshTokenRepo, session)),
+		SignOut:         handler.NewSignOut(usecase.NewSignOut(refreshTokenRepo)),
+		CreateCourse:    handler.NewCreateCourse(usecase.NewCreateCourse(courseRepo)),
+		ListCourse:      handler.NewListCourse(usecase.NewListCourse(courseRepo)),
+		AnalyzeSentence: handler.NewAnalyzeSentence(usecase.NewAnalyzeSentence(courseRepo, sentenceAnalyzer)),
 	}, tokenService, PROD)
 
 	srv := &http.Server{Addr: ":8080", Handler: router}
