@@ -9,4 +9,5 @@ import (
 type CourseRepo interface {
 	Create(ctx context.Context, userID string, baseLanguage, learningLanguage model.Language) (*model.Course, error)
 	List(ctx context.Context, userID string) ([]*model.Course, error)
+	FindByID(ctx context.Context, userID, courseID string) (*model.Course, error)
 }
