@@ -80,6 +80,7 @@ func main() {
 	userRepo := repoinfra.NewPgUserRepo(pool)
 	refreshTokenRepo := repoinfra.NewPgRefreshTokenRepo(pool)
 	courseRepo := repoinfra.NewPgCourseRepo(pool)
+	vocabRepo := repoinfra.NewPgVocabRepo(pool)
 	sentenceAnalyzer := openaiinfra.NewSentenceAnalyzer(&openaiClient, OPENAI_MODEL)
 	session := service.NewSession(refreshTokenRepo, tokenService)
 
@@ -90,6 +91,7 @@ func main() {
 		CreateCourse:    handler.NewCreateCourse(usecase.NewCreateCourse(courseRepo)),
 		ListCourse:      handler.NewListCourse(usecase.NewListCourse(courseRepo)),
 		AnalyzeSentence: handler.NewAnalyzeSentence(usecase.NewAnalyzeSentence(courseRepo, sentenceAnalyzer)),
+		SaveVocab:       handler.NewSaveVocab(usecase.NewSaveVocab(courseRepo, vocabRepo)),
 	}, tokenService, PROD)
 
 	srv := &http.Server{Addr: ":8080", Handler: router}

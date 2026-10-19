@@ -14,6 +14,7 @@ type Handlers struct {
 	CreateCourse    *handler.CreateCourse
 	ListCourse      *handler.ListCourse
 	AnalyzeSentence *handler.AnalyzeSentence
+	SaveVocab       *handler.SaveVocab
 }
 
 func NewRouter(h Handlers, tokenService port.TokenService, isProd bool) *gin.Engine {
@@ -39,6 +40,7 @@ func NewRouter(h Handlers, tokenService port.TokenService, isProd bool) *gin.Eng
 	api.POST("/courses", h.CreateCourse.Handle)
 	api.GET("/courses", h.ListCourse.Handle)
 	api.POST("/analyze", h.AnalyzeSentence.Handle)
+	api.POST("/vocabs", h.SaveVocab.Handle)
 
 	return router
 }
