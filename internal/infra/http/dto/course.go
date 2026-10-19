@@ -3,7 +3,7 @@ package dto
 import (
 	"time"
 
-	"github.com/KrisNathan/linguascreen-api-go/internal/domain/model"
+	"github.com/KrisNathan/linguascreen-api-go/internal/domain/aggregate"
 )
 
 type Course struct {
@@ -13,7 +13,7 @@ type Course struct {
 	CreatedAt        string `json:"created_at"`
 }
 
-func NewCourse(c *model.Course) Course {
+func NewCourse(c *aggregate.Course) Course {
 	return Course{
 		CourseID:         c.ID,
 		BaseLanguage:     c.BaseLanguage.String(),

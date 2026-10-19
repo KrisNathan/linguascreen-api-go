@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/KrisNathan/linguascreen-api-go/internal/domain/model"
+	"github.com/KrisNathan/linguascreen-api-go/internal/domain/aggregate"
 )
 
 type RefreshTokenRepo interface {
@@ -13,7 +13,7 @@ type RefreshTokenRepo interface {
 	// Returns errs.ErrNotFound if there is no such active token.
 	Consume(ctx context.Context, tokenHash string) (userID string, err error)
 	// FindByHash returns the token in any state. Returns errs.ErrNotFound if it does not exist.
-	FindByHash(ctx context.Context, tokenHash string) (*model.RefreshToken, error)
+	FindByHash(ctx context.Context, tokenHash string) (*aggregate.RefreshToken, error)
 	RevokeToken(ctx context.Context, tokenHash string) error
 	RevokeAllForUser(ctx context.Context, userID string) error
 }

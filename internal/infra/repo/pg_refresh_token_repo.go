@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/KrisNathan/linguascreen-api-go/internal/domain/model"
+	"github.com/KrisNathan/linguascreen-api-go/internal/domain/aggregate"
 	"github.com/KrisNathan/linguascreen-api-go/internal/errs"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -38,8 +38,8 @@ func (r *PgRefreshTokenRepo) Consume(ctx context.Context, tokenHash string) (str
 	return userID, err
 }
 
-func (r *PgRefreshTokenRepo) FindByHash(ctx context.Context, tokenHash string) (*model.RefreshToken, error) {
-	var t model.RefreshToken
+func (r *PgRefreshTokenRepo) FindByHash(ctx context.Context, tokenHash string) (*aggregate.RefreshToken, error) {
+	var t aggregate.RefreshToken
 	err := r.pool.QueryRow(ctx,
 		`SELECT id::text, user_id::text, expires_at, revoked_at
 		 FROM refresh_tokens WHERE token_hash = $1`, tokenHash).

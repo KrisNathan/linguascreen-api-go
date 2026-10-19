@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/KrisNathan/linguascreen-api-go/internal/domain/aggregate"
-	"github.com/KrisNathan/linguascreen-api-go/internal/domain/model"
+
 	"github.com/KrisNathan/linguascreen-api-go/internal/domain/valueobject"
 	"github.com/openai/openai-go/v3"
 	"github.com/openai/openai-go/v3/option"
@@ -24,7 +24,7 @@ func NewSentenceAnalyzer(client *openai.Client, model string) *SentenceAnalyzer 
 	return &SentenceAnalyzer{client: client, model: model}
 }
 
-func (a *SentenceAnalyzer) Analyze(ctx context.Context, sentence valueobject.Sentence, learning, base model.Language) (*aggregate.Analysis, error) {
+func (a *SentenceAnalyzer) Analyze(ctx context.Context, sentence valueobject.Sentence, learning, base valueobject.Language) (*aggregate.Analysis, error) {
 	prompt := strings.NewReplacer(
 		"{{learning_language}}", learning.Name(),
 		"{{base_language}}", base.Name(),

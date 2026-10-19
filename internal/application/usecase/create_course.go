@@ -3,8 +3,9 @@ package usecase
 import (
 	"context"
 
-	"github.com/KrisNathan/linguascreen-api-go/internal/domain/model"
+	"github.com/KrisNathan/linguascreen-api-go/internal/domain/aggregate"
 	"github.com/KrisNathan/linguascreen-api-go/internal/domain/repo"
+	"github.com/KrisNathan/linguascreen-api-go/internal/domain/valueobject"
 	"github.com/KrisNathan/linguascreen-api-go/internal/errs"
 )
 
@@ -16,13 +17,13 @@ func NewCreateCourse(courseRepo repo.CourseRepo) *CreateCourse {
 	return &CreateCourse{courseRepo: courseRepo}
 }
 
-func (uc *CreateCourse) Exec(ctx context.Context, userID, baseLanguage, learningLanguage string) (*model.Course, error) {
-	base, err := model.NewLanguage(baseLanguage)
+func (uc *CreateCourse) Exec(ctx context.Context, userID, baseLanguage, learningLanguage string) (*aggregate.Course, error) {
+	base, err := valueobject.NewLanguage(baseLanguage)
 	if err != nil {
 		return nil, err
 	}
 
-	learning, err := model.NewLanguage(learningLanguage)
+	learning, err := valueobject.NewLanguage(learningLanguage)
 	if err != nil {
 		return nil, err
 	}

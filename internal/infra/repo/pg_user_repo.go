@@ -3,7 +3,7 @@ package repo
 import (
 	"context"
 
-	"github.com/KrisNathan/linguascreen-api-go/internal/domain/model"
+	"github.com/KrisNathan/linguascreen-api-go/internal/domain/aggregate"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -15,7 +15,7 @@ func NewPgUserRepo(pool *pgxpool.Pool) *PgUserRepo {
 	return &PgUserRepo{pool: pool}
 }
 
-func (r *PgUserRepo) Upsert(ctx context.Context, googleSub, email, name string) (*model.User, error) {
+func (r *PgUserRepo) Upsert(ctx context.Context, googleSub, email, name string) (*aggregate.User, error) {
 	var id string
 	err := r.pool.QueryRow(ctx,
 		`INSERT INTO users (google_sub, email, name)
@@ -25,5 +25,5 @@ func (r *PgUserRepo) Upsert(ctx context.Context, googleSub, email, name string) 
 	if err != nil {
 		return nil, err
 	}
-	return &model.User{ID: id, GoogleSub: googleSub, Email: email, Name: name}, nil
+	return &aggregate.User{ID: id, GoogleSub: googleSub, Email: email, Name: name}, nil
 }
