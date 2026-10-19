@@ -25,18 +25,18 @@ func NewSignIn(verifier port.IDTokenVerifier, userRepo repo.UserRepo, session *s
 	return &SignIn{verifier: verifier, userRepo: userRepo, session: session}
 }
 
-func (s *SignIn) Exec(ctx context.Context, idToken string) (*SignInResult, error) {
-	identity, err := s.verifier.Verify(ctx, idToken)
+func (uc *SignIn) Exec(ctx context.Context, idToken string) (*SignInResult, error) {
+	identity, err := uc.verifier.Verify(ctx, idToken)
 	if err != nil {
 		return nil, errs.ErrUnauthorized
 	}
 
-	user, err := s.userRepo.Upsert(ctx, identity.Subject, identity.Email, identity.Name)
+	user, err := uc.userRepo.Upsert(ctx, identity.Subject, identity.Email, identity.Name)
 	if err != nil {
 		return nil, err
 	}
 
-	tokens, err := s.session.Issue(ctx, user.ID)
+	tokens, err := uc.session.Issue(ctx, user.ID)
 	if err != nil {
 		return nil, err
 	}

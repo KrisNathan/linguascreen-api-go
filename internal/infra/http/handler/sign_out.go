@@ -1,4 +1,4 @@
-package routes
+package handler
 
 import (
 	"net/http"
@@ -11,23 +11,23 @@ type signOutRequest struct {
 	RefreshToken string `json:"refresh_token" binding:"required"`
 }
 
-type SignOutHandler struct {
+type SignOut struct {
 	uc *usecase.SignOut
 }
 
-func NewSignOutHandler(uc *usecase.SignOut) *SignOutHandler {
-	return &SignOutHandler{uc: uc}
+func NewSignOut(uc *usecase.SignOut) *SignOut {
+	return &SignOut{uc: uc}
 }
 
-func (h *SignOutHandler) SignOutRoute(c *gin.Context) {
+func (h *SignOut) Handle(c *gin.Context) {
 	var req signOutRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		c.Error(err).SetType(gin.ErrorTypeBind)
 		return
 	}
 
 	if err := h.uc.Exec(c.Request.Context(), req.RefreshToken); err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal error"})
+		c.Error(err)
 		return
 	}
 

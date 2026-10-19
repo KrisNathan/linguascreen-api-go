@@ -1,0 +1,42 @@
+package http
+
+import (
+	"github.com/KrisNathan/linguascreen-api-go/internal/application/port"
+	"github.com/KrisNathan/linguascreen-api-go/internal/infra/http/handler"
+	"github.com/KrisNathan/linguascreen-api-go/internal/infra/http/middleware"
+	"github.com/gin-gonic/gin"
+)
+
+type Handlers struct {
+	SignIn       *handler.SignIn
+	RefreshToken *handler.RefreshToken
+	SignOut      *handler.SignOut
+	CreateCourse *handler.CreateCourse
+	ListCourse   *handler.ListCourse
+}
+
+func NewRouter(h Handlers, tokenService port.TokenService, isProd bool) *gin.Engine {
+	if isProd {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
+	router := gin.Default()
+	router.Use(middleware.MapErrors())
+
+	router.GET("/ping", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"message": "pong",
+		})
+	})
+
+	auth := router.Group("/auth")
+	auth.POST("/google", h.SignIn.Handle)
+	auth.POST("/refresh", h.RefreshToken.Handle)
+	auth.POST("/sign-out", h.SignOut.Handle)
+
+	api := router.Group("/", middleware.RequiresAuth(tokenService))
+	api.POST("/courses", h.CreateCourse.Handle)
+	api.GET("/courses", h.ListCourse.Handle)
+
+	return router
+}

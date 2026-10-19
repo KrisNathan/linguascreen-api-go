@@ -1,11 +1,9 @@
-package routes
+package handler
 
 import (
-	"errors"
 	"net/http"
 
 	"github.com/KrisNathan/linguascreen-api-go/internal/application/usecase"
-	errs "github.com/KrisNathan/linguascreen-api-go/internal/errors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -26,28 +24,24 @@ type signInResponse struct {
 	User                 userResponse `json:"user"`
 }
 
-type SignInHandler struct {
+type SignIn struct {
 	uc *usecase.SignIn
 }
 
-func NewSignInHandler(uc *usecase.SignIn) *SignInHandler {
-	return &SignInHandler{uc: uc}
+func NewSignIn(uc *usecase.SignIn) *SignIn {
+	return &SignIn{uc: uc}
 }
 
-func (h *SignInHandler) SignInRoute(c *gin.Context) {
+func (h *SignIn) Handle(c *gin.Context) {
 	var req signInRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		c.Error(err).SetType(gin.ErrorTypeBind)
 		return
 	}
 
 	res, err := h.uc.Exec(c.Request.Context(), req.IDToken)
-	if errors.Is(err, errs.ErrUnauthorized) {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
-		return
-	}
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal error"})
+		c.Error(err)
 		return
 	}
 

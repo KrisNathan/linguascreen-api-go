@@ -9,12 +9,13 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/KrisNathan/linguascreen-api-go/internal/application/service"
 	"github.com/KrisNathan/linguascreen-api-go/internal/application/usecase"
 	"github.com/KrisNathan/linguascreen-api-go/internal/infra/google"
 	httpinfra "github.com/KrisNathan/linguascreen-api-go/internal/infra/http"
-	"github.com/KrisNathan/linguascreen-api-go/internal/infra/http/routes"
+	"github.com/KrisNathan/linguascreen-api-go/internal/infra/http/handler"
 	jwtinfra "github.com/KrisNathan/linguascreen-api-go/internal/infra/jwt"
 	repoinfra "github.com/KrisNathan/linguascreen-api-go/internal/infra/repo"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -76,22 +77,20 @@ func main() {
 
 	userRepo := repoinfra.NewPgUserRepo(pool)
 	refreshTokenRepo := repoinfra.NewPgRefreshTokenRepo(pool)
+	courseRepo := repoinfra.NewPgCourseRepo(pool)
 	session := service.NewSession(refreshTokenRepo, tokenService)
-	signIn := usecase.NewSignIn(idTokenVerifier, userRepo, session)
 
-	signInRoute := routes.NewSignInHandler(signIn)
-	refreshToken := usecase.NewRefreshToken(refreshTokenRepo, session)
-	refreshTokenRoute := routes.NewRefreshTokenHandler(refreshToken)
-
-	signOutRoute := routes.NewSignOutHandler(usecase.NewSignOut(refreshTokenRepo))
-
-	router := httpinfra.NewRouter(signInRoute, refreshTokenRoute, signOutRoute, PROD)
-
-	log.Println("hi")
+	router := httpinfra.NewRouter(httpinfra.Handlers{
+		SignIn:       handler.NewSignIn(usecase.NewSignIn(idTokenVerifier, userRepo, session)),
+		RefreshToken: handler.NewRefreshToken(usecase.NewRefreshToken(refreshTokenRepo, session)),
+		SignOut:      handler.NewSignOut(usecase.NewSignOut(refreshTokenRepo)),
+		CreateCourse: handler.NewCreateCourse(usecase.NewCreateCourse(courseRepo)),
+		ListCourse:   handler.NewListCourse(usecase.NewListCourse(courseRepo)),
+	}, tokenService, PROD)
 
 	srv := &http.Server{Addr: ":8080", Handler: router}
 	go func() {
-		if err := srv.ListenAndServe(); err != nil {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("listen: %v", err)
 		}
 	}()
@@ -100,7 +99,7 @@ func main() {
 	<-ctx.Done()
 	log.Println("shutting down...")
 
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 1000)
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := srv.Shutdown(shutdownCtx); err != nil {
 		log.Printf("shutdown: %v", err)

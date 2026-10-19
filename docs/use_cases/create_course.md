@@ -9,7 +9,7 @@
 - Base language: the language the user is fluent in (e.g. English)
 - Learning language: the language the user wants to learn (e.g. Japanese/Chinese)
 
-Both must be in ISO 639-1 format (e.g. "en", "ja", "zh").
+Both must be supported ISO 639-1 codes: "en", "ja" or "zh".
 
 ```json
 {
