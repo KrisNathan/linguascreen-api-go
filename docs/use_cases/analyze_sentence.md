@@ -7,7 +7,7 @@ This replaces selecting individual words, which caused truncated selections (e.g
 ## Input
 
 - course id: determines the learning language and base language
-- sentence: as detected by the frontend, may contain OCR line breaks. At most `MAX_SENTENCE_LENGTH` UTF-16 code units after normalization.
+- sentence: as detected by the frontend, may contain OCR line breaks. At most `MAX_SENTENCE_LENGTH` runes (Unicode code points) after normalization.
 
 ```json
 {
@@ -23,7 +23,7 @@ This replaces selecting individual words, which caused truncated selections (e.g
 - language_mismatch: `true` if the sentence is not in the course's learning language (e.g. English text scanned in the Japanese course). The client warns before saving, since saved vocabs would land in the wrong course.
 - tokens: the sentence split into tokens, in order. Concatenating every `surface` must equal `sentence` exactly.
   - surface: the token as seen in the sentence
-  - span: `[start, end)` of the surface in `sentence`, in UTF-16 code units (matches Flutter's `String` indexing). Computed by the server, never by the LLM.
+  - span: `[start, end)` of the surface in `sentence`, in runes (Unicode code points, Go `[]rune` and Dart `String.runes`). Computed by the server, never by the LLM.
   - saveable: `false` for particles, punctuation, symbols and whitespace. Those tokens only have `surface` and `span`.
   - dict_form: dictionary form
   - reading: reading of the dict form (JP: hiragana, CN: pinyin with tone marks e.g. `yín háng`)
@@ -73,7 +73,7 @@ For now:
    5. Collapse whitespace runs into one space and trim
 2. Validate, otherwise 400
    1. Normalized sentence is non-empty
-   2. At most `MAX_SENTENCE_LENGTH` UTF-16 code units (OCR can send a whole page, and every token costs money)
+   2. At most `MAX_SENTENCE_LENGTH` runes (OCR can send a whole page, and every token costs money)
 3. Check the course exists and belongs to the user, otherwise 404
 4. Cache lookup by (`PROMPT_VERSION`, model, learning language, base language, normalized sentence). On hit, return it.
 5. Rate limit: at most `LLM_REQUESTS_PER_HOUR` per user, shared with Explain, otherwise 429. Only cache misses count.

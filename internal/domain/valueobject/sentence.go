@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"strings"
 	"unicode"
-	"unicode/utf16"
+	"unicode/utf8"
 
 	"github.com/KrisNathan/linguascreen-api-go/internal/errs"
 	"golang.org/x/text/unicode/norm"
 )
 
-const MaxSentenceLength = 300 // utf16
+const MaxSentenceLength = 300 // runes
 
 type Sentence struct {
 	Text string
@@ -23,7 +23,7 @@ func NewSentence(raw string) (*Sentence, error) {
 		return nil, errs.WithHint(errs.ErrInvalidInput, "sentence is empty")
 	}
 
-	if sentenceLen := UTF16Len(s); sentenceLen > MaxSentenceLength {
+	if sentenceLen := utf8.RuneCountInString(s); sentenceLen > MaxSentenceLength {
 		return nil, errs.WithHint(errs.ErrInvalidInput, fmt.Sprintf("sentence is %d chars long, max is %d", sentenceLen, MaxSentenceLength))
 	}
 
@@ -61,15 +61,6 @@ func normalize(raw string) string {
 		}
 	}
 	return b.String() // trailing whitespace is never written
-}
-
-// UTF16Len returns the length of s in UTF-16 code units, the unit used by spans.
-func UTF16Len(s string) int {
-	length := 0
-	for _, r := range s {
-		length += utf16.RuneLen(r)
-	}
-	return length
 }
 
 func isCJK(r rune) bool {

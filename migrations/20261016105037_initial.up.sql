@@ -86,8 +86,8 @@ CREATE TABLE occurrences (
   vocab_id UUID NOT NULL,
   sentence_id UUID NOT NULL,
 
-  span_start INT NOT NULL, -- UTF-16 code units
-  span_end INT NOT NULL,   -- UTF-16 code units, exclusive
+  span_start INT NOT NULL, -- runes (code points)
+  span_end INT NOT NULL,   -- runes (code points), exclusive
   surface TEXT NOT NULL,
   translation TEXT NOT NULL,
   from_part BOOL NOT NULL DEFAULT false,

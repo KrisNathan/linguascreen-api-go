@@ -39,7 +39,7 @@ Expected latency is roughly 3 to 8 seconds (about 300 to 500 output tokens), ins
 1. Check the course exists and belongs to the user, otherwise 404
 2. Validate, otherwise 400
    1. `sentence` is already normalized (normalizing it again changes nothing)
-   2. `sentence` is non-empty and at most `MAX_SENTENCE_LENGTH` UTF-16 code units (same limit as Analyze Sentence)
+   2. `sentence` is non-empty and at most `MAX_SENTENCE_LENGTH` runes (same limit as Analyze Sentence)
 3. Cache lookup by (`PROMPT_VERSION`, model, learning language, base language, sentence). On hit, return it.
 4. Rate limit: shares `LLM_REQUESTS_PER_HOUR` with Analyze Sentence, otherwise 429. Only cache misses count.
 5. LLM call with the request context, so a client disconnect cancels the LLM call. LLM failure → 502.

@@ -3,6 +3,7 @@ package aggregate
 import (
 	"errors"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/KrisNathan/linguascreen-api-go/internal/domain/valueobject"
 )
@@ -19,16 +20,16 @@ type Analysis struct {
 func (a *Analysis) Align(sentence valueobject.Sentence) error {
 	text := sentence.Text
 	var out []Token
-	byteAt, unitAt := 0, 0 // cursor in bytes and in UTF-16 code units
+	byteAt, runeAt := 0, 0
 
 	addGap := func(gap string) {
 		if gap == "" {
 			return
 		}
-		end := unitAt + valueobject.UTF16Len(gap)
-		out = append(out, Token{Surface: gap, Span: valueobject.Span{Start: unitAt, End: end}})
+		end := runeAt + utf8.RuneCountInString(gap)
+		out = append(out, Token{Surface: gap, Span: valueobject.Span{Start: runeAt, End: end}})
 		byteAt += len(gap)
-		unitAt = end
+		runeAt = end
 	}
 
 	for _, t := range a.Tokens {
@@ -41,9 +42,9 @@ func (a *Analysis) Align(sentence valueobject.Sentence) error {
 		}
 		addGap(text[byteAt : byteAt+i])
 
-		t.Span = valueobject.Span{Start: unitAt, End: unitAt + valueobject.UTF16Len(t.Surface)}
+		t.Span = valueobject.Span{Start: runeAt, End: runeAt + utf8.RuneCountInString(t.Surface)}
 		byteAt += len(t.Surface)
-		unitAt = t.Span.End
+		runeAt = t.Span.End
 
 		// reading may be empty on purpose, for languages without a separate reading system.
 		if t.Saveable && (t.DictForm == "" || t.Translation == "") {
@@ -79,7 +80,7 @@ func alignParts(t Token) []Part {
 
 	at := t.Span.Start
 	for i := range parts {
-		end := at + valueobject.UTF16Len(parts[i].Surface)
+		end := at + utf8.RuneCountInString(parts[i].Surface)
 		parts[i].Span = valueobject.Span{Start: at, End: end}
 		at = end
 	}

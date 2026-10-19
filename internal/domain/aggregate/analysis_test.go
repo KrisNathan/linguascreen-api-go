@@ -73,13 +73,13 @@ func TestAlignAlteredSurface(t *testing.T) {
 	}
 }
 
-func TestAlignUTF16(t *testing.T) {
+func TestAlignCountsRunes(t *testing.T) {
 	got, err := align(t, "😀本", []Token{{Surface: "😀"}, word("本", "本", "book")})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got[0].Span != span(0, 2) || got[1].Span != span(2, 3) {
-		t.Errorf("spans %v %v, want [0,2) [2,3)", got[0].Span, got[1].Span)
+	if got[0].Span != span(0, 1) || got[1].Span != span(1, 2) {
+		t.Errorf("spans %v %v, want [0,1) [1,2)", got[0].Span, got[1].Span)
 	}
 }
 

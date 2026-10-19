@@ -19,7 +19,7 @@ All fields are copied from the Analyze Sentence response.
 - course id
 - sentence: the normalized sentence, unchanged
 - sentence_translation: the whole sentence translation
-- span: `[start, end)` of the tapped token or part, in UTF-16 code units
+- span: `[start, end)` of the tapped token or part, in runes (Unicode code points)
 - from_part: `true` if the user tapped a part instead of a token
 - dict_form, reading, translation: of the tapped token or part
 
@@ -65,7 +65,7 @@ The client uses the flags for feedback:
 1. Check the course exists and belongs to the user, otherwise 404
 2. Validate, otherwise 400
    1. `sentence` is already normalized (normalizing it again changes nothing). Catches clients sending raw text.
-   2. `span` is non-empty, within the sentence and on UTF-16 boundaries (does not split a surrogate pair)
+   2. `span` is non-empty and within the sentence
    3. `dict_form` and `translation` are non-empty
 3. Normalize the vocab fields, so the same word from different LLM calls maps to the same vocab
    1. `dict_form`, `reading`, `translation`: NFC, trim, collapse whitespace into one space

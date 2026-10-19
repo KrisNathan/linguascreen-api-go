@@ -68,8 +68,8 @@ erDiagram
     uuid id PK
     uuid vocab_id FK
     uuid sentence_id FK
-    int span_start "UTF-16 code units in Sentence.text"
-    int span_end "UTF-16 code units, exclusive"
+    int span_start "runes (code points) in Sentence.text"
+    int span_end "runes (code points), exclusive"
     text surface "as it appears in the sentence, e.g. 読みます"
     text translation "meaning in this sentence, shown in the quiz"
     bool from_part "saved from a part of a compound, never used for fill-in-the-blank"
