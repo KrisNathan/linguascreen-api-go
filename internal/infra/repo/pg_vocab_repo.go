@@ -145,3 +145,32 @@ func (r *PgVocabRepo) FindByID(ctx context.Context, userID, vocabID string) (*ag
 	v.OccurrenceCount = len(v.Occurrences)
 	return &v, nil
 }
+
+func (r *PgVocabRepo) UpdateTranslation(ctx context.Context, vocabID, translation string) error {
+	_, err := r.pool.Exec(ctx, `UPDATE vocabs SET translation = $2 WHERE id = $1`, vocabID, translation)
+	return err
+}
+
+func (r *PgVocabRepo) Delete(ctx context.Context, userID, vocabID string) error {
+	var otherUsers bool
+	err := r.pool.QueryRow(ctx,
+		`WITH target AS (
+		   SELECT v.id, c.user_id FROM vocabs v JOIN courses c ON c.id = v.course_id WHERE v.id = $1
+		 ), del AS (
+		   DELETE FROM vocabs WHERE id IN (SELECT id FROM target WHERE user_id = $2)
+		 )
+		 SELECT EXISTS (SELECT 1 FROM target WHERE user_id <> $2)`,
+		vocabID, userID).Scan(&otherUsers)
+	// 22P02: vocabID is not a valid UUID, so there is nothing to delete.
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.Code == "22P02" {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if otherUsers {
+		return errs.ErrNotFound
+	}
+	return nil
+}

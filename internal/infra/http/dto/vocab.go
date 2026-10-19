@@ -69,20 +69,24 @@ type VocabDetail struct {
 func NewVocabList(vocabs []*aggregate.Vocab, nextCursor string) VocabList {
 	l := VocabList{Items: make([]VocabItem, len(vocabs))}
 	for i, v := range vocabs {
-		l.Items[i] = VocabItem{
-			ID:              v.ID,
-			DictForm:        v.DictForm,
-			Reading:         v.Reading,
-			Translation:     v.Translation,
-			OccurrenceCount: v.OccurrenceCount,
-			LastSavedAt:     formatTime(v.LastSavedAt),
-			Progress:        newProgress(v.Progress),
-		}
+		l.Items[i] = NewVocabItem(v)
 	}
 	if nextCursor != "" {
 		l.NextCursor = &nextCursor
 	}
 	return l
+}
+
+func NewVocabItem(v *aggregate.Vocab) VocabItem {
+	return VocabItem{
+		ID:              v.ID,
+		DictForm:        v.DictForm,
+		Reading:         v.Reading,
+		Translation:     v.Translation,
+		OccurrenceCount: v.OccurrenceCount,
+		LastSavedAt:     formatTime(v.LastSavedAt),
+		Progress:        newProgress(v.Progress),
+	}
 }
 
 func NewVocabDetail(v *aggregate.Vocab) VocabDetail {

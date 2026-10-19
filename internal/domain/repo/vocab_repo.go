@@ -19,4 +19,8 @@ type VocabRepo interface {
 	Save(ctx context.Context, sentence valueobject.Sentence, sentenceTranslation string, vocab *aggregate.Vocab, occ *aggregate.Occurrence) (vocabCreated, occurrenceCreated bool, err error)
 	List(ctx context.Context, courseID string, after *VocabCursor, limit int) ([]*aggregate.Vocab, error)
 	FindByID(ctx context.Context, userID, vocabID string) (*aggregate.Vocab, error)
+	UpdateTranslation(ctx context.Context, vocabID, translation string) error
+	// Delete returns errs.ErrNotFound only if the vocab belongs to another user;
+	// a missing vocab counts as already deleted.
+	Delete(ctx context.Context, userID, vocabID string) error
 }

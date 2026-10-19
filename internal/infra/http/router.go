@@ -17,6 +17,8 @@ type Handlers struct {
 	SaveVocab       *handler.SaveVocab
 	ListVocabs      *handler.ListVocabs
 	GetVocab        *handler.GetVocab
+	UpdateVocab     *handler.UpdateVocab
+	DeleteVocab     *handler.DeleteVocab
 }
 
 func NewRouter(h Handlers, tokenService port.TokenService, isProd bool) *gin.Engine {
@@ -45,6 +47,8 @@ func NewRouter(h Handlers, tokenService port.TokenService, isProd bool) *gin.Eng
 	api.POST("/vocabs", h.SaveVocab.Handle)
 	api.GET("/courses/:course_id/vocabs", h.ListVocabs.Handle)
 	api.GET("/vocabs/:vocab_id", h.GetVocab.Handle)
+	api.PATCH("/vocabs/:vocab_id", h.UpdateVocab.Handle)
+	api.DELETE("/vocabs/:vocab_id", h.DeleteVocab.Handle)
 
 	return router
 }

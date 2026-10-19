@@ -94,6 +94,8 @@ func main() {
 		SaveVocab:       handler.NewSaveVocab(usecase.NewSaveVocab(courseRepo, vocabRepo)),
 		ListVocabs:      handler.NewListVocabs(usecase.NewListVocabs(courseRepo, vocabRepo)),
 		GetVocab:        handler.NewGetVocab(usecase.NewGetVocab(vocabRepo)),
+		UpdateVocab:     handler.NewUpdateVocab(usecase.NewUpdateVocab(vocabRepo)),
+		DeleteVocab:     handler.NewDeleteVocab(usecase.NewDeleteVocab(vocabRepo)),
 	}, tokenService, PROD)
 
 	srv := &http.Server{Addr: ":8080", Handler: router}
