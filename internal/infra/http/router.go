@@ -14,6 +14,7 @@ type Handlers struct {
 	CreateCourse    *handler.CreateCourse
 	ListCourse      *handler.ListCourse
 	AnalyzeSentence *handler.AnalyzeSentence
+	ExplainSentence *handler.ExplainSentence
 	SaveVocab       *handler.SaveVocab
 	ListVocabs      *handler.ListVocabs
 	GetVocab        *handler.GetVocab
@@ -44,6 +45,7 @@ func NewRouter(h Handlers, tokenService port.TokenService, isProd bool) *gin.Eng
 	api.POST("/courses", h.CreateCourse.Handle)
 	api.GET("/courses", h.ListCourse.Handle)
 	api.POST("/analyze", h.AnalyzeSentence.Handle)
+	api.POST("/explain", h.ExplainSentence.Handle)
 	api.POST("/vocabs", h.SaveVocab.Handle)
 	api.GET("/courses/:course_id/vocabs", h.ListVocabs.Handle)
 	api.GET("/vocabs/:vocab_id", h.GetVocab.Handle)

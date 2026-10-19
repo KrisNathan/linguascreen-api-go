@@ -82,6 +82,7 @@ func main() {
 	courseRepo := repoinfra.NewPgCourseRepo(pool)
 	vocabRepo := repoinfra.NewPgVocabRepo(pool)
 	sentenceAnalyzer := openaiinfra.NewSentenceAnalyzer(&openaiClient, OPENAI_MODEL)
+	sentenceExplainer := openaiinfra.NewSentenceExplainer(&openaiClient, OPENAI_MODEL)
 	session := service.NewSession(refreshTokenRepo, tokenService)
 
 	router := httpinfra.NewRouter(httpinfra.Handlers{
@@ -91,6 +92,7 @@ func main() {
 		CreateCourse:    handler.NewCreateCourse(usecase.NewCreateCourse(courseRepo)),
 		ListCourse:      handler.NewListCourse(usecase.NewListCourse(courseRepo)),
 		AnalyzeSentence: handler.NewAnalyzeSentence(usecase.NewAnalyzeSentence(courseRepo, sentenceAnalyzer)),
+		ExplainSentence: handler.NewExplainSentence(usecase.NewExplainSentence(courseRepo, sentenceExplainer)),
 		SaveVocab:       handler.NewSaveVocab(usecase.NewSaveVocab(courseRepo, vocabRepo)),
 		ListVocabs:      handler.NewListVocabs(usecase.NewListVocabs(courseRepo, vocabRepo)),
 		GetVocab:        handler.NewGetVocab(usecase.NewGetVocab(vocabRepo)),
