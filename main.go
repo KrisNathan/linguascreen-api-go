@@ -92,6 +92,8 @@ func main() {
 		ListCourse:      handler.NewListCourse(usecase.NewListCourse(courseRepo)),
 		AnalyzeSentence: handler.NewAnalyzeSentence(usecase.NewAnalyzeSentence(courseRepo, sentenceAnalyzer)),
 		SaveVocab:       handler.NewSaveVocab(usecase.NewSaveVocab(courseRepo, vocabRepo)),
+		ListVocabs:      handler.NewListVocabs(usecase.NewListVocabs(courseRepo, vocabRepo)),
+		GetVocab:        handler.NewGetVocab(usecase.NewGetVocab(vocabRepo)),
 	}, tokenService, PROD)
 
 	srv := &http.Server{Addr: ":8080", Handler: router}

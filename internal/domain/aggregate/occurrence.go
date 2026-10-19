@@ -1,11 +1,18 @@
 package aggregate
 
-import "github.com/KrisNathan/linguascreen-api-go/internal/domain/valueobject"
+import (
+	"time"
+
+	"github.com/KrisNathan/linguascreen-api-go/internal/domain/valueobject"
+)
 
 type Occurrence struct {
-	ID          string
-	Span        valueobject.Span
-	Surface     string
-	Translation string
-	FromPart    bool
+	ID                  string
+	Sentence            string
+	SentenceTranslation string
+	Span                valueobject.Span
+	Surface             string
+	Translation         string
+	FromPart            bool
+	CreatedAt           time.Time
 }

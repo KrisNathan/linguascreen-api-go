@@ -2,9 +2,15 @@ package repo
 
 import (
 	"context"
+	"errors"
+	"time"
 
 	"github.com/KrisNathan/linguascreen-api-go/internal/domain/aggregate"
+	domainrepo "github.com/KrisNathan/linguascreen-api-go/internal/domain/repo"
 	"github.com/KrisNathan/linguascreen-api-go/internal/domain/valueobject"
+	"github.com/KrisNathan/linguascreen-api-go/internal/errs"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -68,4 +74,74 @@ func (r *PgVocabRepo) Save(ctx context.Context, sentence valueobject.Sentence, s
 		return false, false, err
 	}
 	return vocabCreated, occurrenceCreated, nil
+}
+
+func (r *PgVocabRepo) List(ctx context.Context, courseID string, after *domainrepo.VocabCursor, limit int) ([]*aggregate.Vocab, error) {
+	var afterAt *time.Time
+	var afterID *string
+	if after != nil {
+		afterAt, afterID = &after.LastSavedAt, &after.ID
+	}
+	rows, err := r.pool.Query(ctx,
+		`SELECT v.id::text, v.course_id::text, v.dict_form, v.reading, v.translation, v.last_saved_at, v.created_at,
+		        (SELECT count(*) FROM occurrences o WHERE o.vocab_id = v.id)
+		 FROM vocabs v
+		 WHERE v.course_id = $1
+		   AND ($2::timestamptz IS NULL OR (v.last_saved_at, v.id) < ($2::timestamptz, $3::uuid))
+		 ORDER BY v.last_saved_at DESC, v.id DESC
+		 LIMIT $4`,
+		courseID, afterAt, afterID, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	vocabs, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (*aggregate.Vocab, error) {
+		var v aggregate.Vocab
+		err := row.Scan(&v.ID, &v.CourseID, &v.DictForm, &v.Reading, &v.Translation, &v.LastSavedAt, &v.CreatedAt, &v.OccurrenceCount)
+		return &v, err
+	})
+	// 22P02: the course was already checked, so only the cursor's id can be a malformed UUID.
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.Code == "22P02" {
+		return nil, errs.WithHint(errs.ErrInvalidInput, "invalid cursor")
+	}
+	return vocabs, err
+}
+
+func (r *PgVocabRepo) FindByID(ctx context.Context, userID, vocabID string) (*aggregate.Vocab, error) {
+	var v aggregate.Vocab
+	err := r.pool.QueryRow(ctx,
+		`SELECT v.id::text, v.course_id::text, v.dict_form, v.reading, v.translation, v.last_saved_at, v.created_at
+		 FROM vocabs v
+		 JOIN courses c ON c.id = v.course_id
+		 WHERE v.id = $1 AND c.user_id = $2`,
+		vocabID, userID).Scan(&v.ID, &v.CourseID, &v.DictForm, &v.Reading, &v.Translation, &v.LastSavedAt, &v.CreatedAt)
+	// 22P02: vocabID is not a valid UUID, so no such vocab exists.
+	var pgErr *pgconn.PgError
+	if errors.Is(err, pgx.ErrNoRows) || (errors.As(err, &pgErr) && pgErr.Code == "22P02") {
+		return nil, errs.ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := r.pool.Query(ctx,
+		`SELECT o.id::text, s.text, s.translation, o.span_start, o.span_end, o.surface, o.translation, o.from_part, o.created_at
+		 FROM occurrences o
+		 JOIN sentences s ON s.id = o.sentence_id
+		 WHERE o.vocab_id = $1
+		 ORDER BY o.created_at DESC, o.id DESC`, v.ID)
+	if err != nil {
+		return nil, err
+	}
+	v.Occurrences, err = pgx.CollectRows(rows, func(row pgx.CollectableRow) (aggregate.Occurrence, error) {
+		var o aggregate.Occurrence
+		err := row.Scan(&o.ID, &o.Sentence, &o.SentenceTranslation, &o.Span.Start, &o.Span.End, &o.Surface, &o.Translation, &o.FromPart, &o.CreatedAt)
+		return o, err
+	})
+	if err != nil {
+		return nil, err
+	}
+	v.OccurrenceCount = len(v.Occurrences)
+	return &v, nil
 }

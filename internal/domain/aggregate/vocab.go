@@ -2,6 +2,7 @@ package aggregate
 
 import (
 	"strings"
+	"time"
 
 	"github.com/KrisNathan/linguascreen-api-go/internal/domain/valueobject"
 	"github.com/KrisNathan/linguascreen-api-go/internal/errs"
@@ -14,6 +15,12 @@ type Vocab struct {
 	DictForm    string
 	Reading     string
 	Translation string
+	LastSavedAt time.Time
+	CreatedAt   time.Time
+	Progress    valueobject.Progress
+
+	OccurrenceCount int
+	Occurrences     []Occurrence
 }
 
 // NewVocab normalizes the fields so the same word from different LLM calls
