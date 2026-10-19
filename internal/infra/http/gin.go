@@ -18,7 +18,7 @@ func NewRouter(signIn *routes.SignInHandler, refresh *routes.RefreshTokenHandler
 		})
 	})
 
-	router.POST("/signin", signIn.SignInRoute)
+	router.POST("/auth/google", signIn.SignInRoute)
 	router.POST("/auth/refresh", refresh.RefreshTokenRoute)
 	router.POST("/auth/sign-out", signOut.SignOutRoute)
 
