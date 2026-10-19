@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/KrisNathan/linguascreen-api-go/internal/domain/model"
-	errs "github.com/KrisNathan/linguascreen-api-go/internal/errors"
+	"github.com/KrisNathan/linguascreen-api-go/internal/errs"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )

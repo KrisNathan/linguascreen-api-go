@@ -3,7 +3,7 @@ package model
 import (
 	"fmt"
 
-	errs "github.com/KrisNathan/linguascreen-api-go/internal/errors"
+	"github.com/KrisNathan/linguascreen-api-go/internal/errs"
 )
 
 // supportedLanguages maps ISO 639-1 codes to the names used in LLM prompts.

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	errs "github.com/KrisNathan/linguascreen-api-go/internal/errors"
+	"github.com/KrisNathan/linguascreen-api-go/internal/errs"
 	"github.com/gin-gonic/gin"
 )
 

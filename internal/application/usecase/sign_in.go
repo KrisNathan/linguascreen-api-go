@@ -7,7 +7,7 @@ import (
 	"github.com/KrisNathan/linguascreen-api-go/internal/application/service"
 	"github.com/KrisNathan/linguascreen-api-go/internal/domain/model"
 	"github.com/KrisNathan/linguascreen-api-go/internal/domain/repo"
-	errs "github.com/KrisNathan/linguascreen-api-go/internal/errors"
+	"github.com/KrisNathan/linguascreen-api-go/internal/errs"
 )
 
 type SignInResult struct {
