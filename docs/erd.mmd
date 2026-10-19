@@ -25,7 +25,7 @@ erDiagram
   RefreshToken {
     uuid id PK
     uuid user_id FK
-    bytea token_hash UK "SHA-256 of the token, the token itself is never stored"
+    char(64) token_hash UK "SHA-256 hex of the token, the token itself is never stored"
     timestamptz expires_at
     timestamptz revoked_at "null while valid, set on rotation or sign out"
     timestamptz created_at
@@ -58,7 +58,7 @@ erDiagram
     uuid id PK
     uuid course_id FK
     text text "normalized"
-    bytea text_hash "SHA-256 of text, 32 bytes, computed by the application"
+    text text_hash "SHA-256 of text, 64 hex chars, computed by the application"
     text translation "whole sentence, in base_language"
     timestamptz created_at
   }
