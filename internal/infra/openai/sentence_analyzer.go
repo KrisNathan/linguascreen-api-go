@@ -37,7 +37,8 @@ func (a *SentenceAnalyzer) Analyze(ctx context.Context, sentence valueobject.Sen
 				openai.SystemMessage(prompt),
 				openai.UserMessage(sentence.Text),
 			},
-			Temperature: openai.Float(0),
+			Temperature:     openai.Float(0),
+			ReasoningEffort: openai.ReasoningEffortLow,
 			ResponseFormat: openai.ChatCompletionNewParamsResponseFormatUnion{
 				OfJSONSchema: &shared.ResponseFormatJSONSchemaParam{
 					JSONSchema: shared.ResponseFormatJSONSchemaJSONSchemaParam{
