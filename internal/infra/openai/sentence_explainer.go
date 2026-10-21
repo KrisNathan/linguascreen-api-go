@@ -23,6 +23,7 @@ func (e *SentenceExplainer) Explain(ctx context.Context, sentence valueobject.Se
 	prompt := strings.NewReplacer(
 		"{{learning_language}}", learning.Name(),
 		"{{base_language}}", base.Name(),
+		"{{language_rules}}", explainLanguageRules[learning.String()],
 	).Replace(explainSystemPrompt)
 
 	chat, err := e.client.Chat.Completions.New(ctx, openai.ChatCompletionNewParams{
@@ -31,8 +32,9 @@ func (e *SentenceExplainer) Explain(ctx context.Context, sentence valueobject.Se
 			openai.SystemMessage(prompt),
 			openai.UserMessage("Sentence: " + sentence.Text + "\nTranslation: " + sentenceTranslation),
 		},
-		// Expected 300 to 500 tokens; caps the cost of a rambling reply.
-		MaxCompletionTokens: openai.Int(1500),
+		// Covers reasoning plus a ~300-500 token answer; caps the cost of a rambling reply.
+		MaxCompletionTokens: openai.Int(4000),
+		ReasoningEffort:     openai.ReasoningEffortLow,
 	})
 	if err != nil {
 		return "", fmt.Errorf("explain sentence: %w", err)
@@ -42,7 +44,8 @@ func (e *SentenceExplainer) Explain(ctx context.Context, sentence valueobject.Se
 	}
 	choice := chat.Choices[0]
 	if choice.FinishReason != "stop" {
-		return "", fmt.Errorf("explain sentence: finish reason %q", choice.FinishReason)
+		return "", fmt.Errorf("explain sentence: finish reason %q (completion tokens %d, reasoning tokens %d)",
+			choice.FinishReason, chat.Usage.CompletionTokens, chat.Usage.CompletionTokensDetails.ReasoningTokens)
 	}
 	out := strings.TrimSpace(choice.Message.Content)
 	if out == "" {
@@ -50,31 +53,3 @@ func (e *SentenceExplainer) Explain(ctx context.Context, sentence valueobject.Se
 	}
 	return out, nil
 }
-
-// ExplainPromptVersion must be bumped whenever explainSystemPrompt changes,
-// so cached results are no longer served.
-const (
-	ExplainPromptVersion = 1
-	// From docs/use_cases/explain.md.
-	explainSystemPrompt = `You are a friendly language tutor. The learner is studying {{learning_language}} and wants explanations in {{base_language}}.
-They will send a sentence in {{learning_language}} (usually extracted by OCR from a book or a screen) and its translation.
-
-Explain the sentence in {{base_language}}, in Markdown, using only the sections that apply:
-
-## Meaning
-What the sentence means here, and how it differs from a word-for-word reading. Stay consistent with the given translation unless it is wrong; if so, say so briefly.
-
-## Grammar
-Each grammar point that matters: conjugations, particles, sentence patterns. Name the form (e.g. "て-form + ください"), what it does, and the dictionary form of inflected words.
-
-## Expressions
-Idioms or set phrases (e.g. 気をつける), with their meaning as a whole.
-
-## Nuance
-Politeness level, tone, register, or anything a learner might misread.
-
-Rules:
-- Write readings for words beyond beginner level (Japanese: hiragana in parentheses, Chinese: pinyin with tone marks).
-- Be concise: short paragraphs and bullet points, no introduction or closing remarks.
-- If the text looks garbled by OCR, say what it most likely says before explaining.`
-)
