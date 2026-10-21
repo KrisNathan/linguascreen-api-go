@@ -1,35 +1,18 @@
-# Build stage
-FROM golang:1.25-alpine AS builder
+FROM golang:1.27-alpine AS base
 
 WORKDIR /app
 
-# Copy go mod and sum files
-COPY go.mod go.sum ./
+FROM base AS deps
 
-# Download dependencies
+COPY go.mod go.sum ./
 RUN go mod download
 
-# Copy source code
+FROM deps AS build
+
 COPY . .
 
-# Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
+RUN CGO_ENABLED=0 GOOS=linux go build -o /docker-linguascreen-api-go
 
-# Final stage
-FROM alpine:latest
+FROM build AS runner
 
-RUN apk --no-cache add ca-certificates
-
-WORKDIR /root/
-
-# Copy the binary from builder stage
-COPY --from=builder /app/main .
-
-# Copy migration file
-COPY --from=builder /app/migration.sql .
-
-# Expose port
-EXPOSE 8080
-
-# Run the binary
-CMD ["./main"]
+CMD ["/docker-linguascreen-api-go"]
