@@ -1,3 +1,4 @@
+DROP TABLE IF EXISTS flash_card_reviews;
 DROP TABLE IF EXISTS questions;
 DROP TABLE IF EXISTS practice_sessions;
 DROP TABLE IF EXISTS occurrences;

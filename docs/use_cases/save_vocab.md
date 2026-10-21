@@ -102,7 +102,7 @@ Occurrence:
 - from part: occurrences saved from a part are never used for fill-in-the-blank, only recognition. Blanking a piece of a compound (`火车[__]`) is not a fair question.
 - unique (vocab id, sentence id, span start)
 
-Not stored: status, due date, streak. These are derived from answered questions (see [Scheduling](scheduling.md)).
+`xp` and `last_reviewed_at` start at their defaults and change only when the vocab is answered (see [Scheduling](scheduling.md)).
 
 ## Sentence hash
 

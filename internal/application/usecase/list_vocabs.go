@@ -9,7 +9,6 @@ import (
 
 	"github.com/KrisNathan/linguascreen-api-go/internal/domain/aggregate"
 	"github.com/KrisNathan/linguascreen-api-go/internal/domain/repo"
-	"github.com/KrisNathan/linguascreen-api-go/internal/domain/valueobject"
 	"github.com/KrisNathan/linguascreen-api-go/internal/errs"
 )
 
@@ -58,9 +57,6 @@ func (uc *ListVocabs) Exec(ctx context.Context, userID, courseID string, limit i
 		vocabs = vocabs[:limit]
 		last := vocabs[limit-1]
 		next = encodeVocabCursor(repo.VocabCursor{LastSavedAt: last.LastSavedAt, ID: last.ID})
-	}
-	for _, v := range vocabs {
-		v.Progress = valueobject.Progress{State: valueobject.ProgressNew} // TODO: derive from answered questions once Quiz exists
 	}
 	return vocabs, next, nil
 }

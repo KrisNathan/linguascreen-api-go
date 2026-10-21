@@ -83,13 +83,15 @@ func (r *PgVocabRepo) List(ctx context.Context, courseID string, after *domainre
 		afterAt, afterID = &after.LastSavedAt, &after.ID
 	}
 	rows, err := r.pool.Query(ctx,
-		`SELECT v.id::text, v.course_id::text, v.dict_form, v.reading, v.translation, v.last_saved_at, v.created_at,
-		        (SELECT count(*) FROM occurrences o WHERE o.vocab_id = v.id)
-		 FROM vocabs v
-		 WHERE v.course_id = $1
-		   AND ($2::timestamptz IS NULL OR (v.last_saved_at, v.id) < ($2::timestamptz, $3::uuid))
-		 ORDER BY v.last_saved_at DESC, v.id DESC
-		 LIMIT $4`,
+		`
+		SELECT v.id::text, v.course_id::text, v.dict_form, v.reading, v.translation, v.xp, v.correct_streak, v.last_reviewed_at, v.last_saved_at, v.created_at,
+			(SELECT count(*) FROM occurrences o WHERE o.vocab_id = v.id)
+		FROM vocabs v
+		WHERE v.course_id = $1
+			AND ($2::timestamptz IS NULL OR (v.last_saved_at, v.id) < ($2::timestamptz, $3::uuid))
+		ORDER BY v.last_saved_at DESC, v.id DESC
+		LIMIT $4
+		`,
 		courseID, afterAt, afterID, limit)
 	if err != nil {
 		return nil, err
@@ -97,7 +99,7 @@ func (r *PgVocabRepo) List(ctx context.Context, courseID string, after *domainre
 
 	vocabs, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (*aggregate.Vocab, error) {
 		var v aggregate.Vocab
-		err := row.Scan(&v.ID, &v.CourseID, &v.DictForm, &v.Reading, &v.Translation, &v.LastSavedAt, &v.CreatedAt, &v.OccurrenceCount)
+		err := row.Scan(&v.ID, &v.CourseID, &v.DictForm, &v.Reading, &v.Translation, &v.XP, &v.CorrectStreak, &v.LastReviewedAt, &v.LastSavedAt, &v.CreatedAt, &v.OccurrenceCount)
 		return &v, err
 	})
 	// 22P02: the course was already checked, so only the cursor's id can be a malformed UUID.
@@ -108,14 +110,16 @@ func (r *PgVocabRepo) List(ctx context.Context, courseID string, after *domainre
 	return vocabs, err
 }
 
-func (r *PgVocabRepo) FindByID(ctx context.Context, userID, vocabID string) (*aggregate.Vocab, error) {
-	var v aggregate.Vocab
+func (r *PgVocabRepo) FindByID(ctx context.Context, userID, vocabID string) (*aggregate.VocabDetail, error) {
+	v := aggregate.VocabDetail{Vocab: &aggregate.Vocab{}}
 	err := r.pool.QueryRow(ctx,
-		`SELECT v.id::text, v.course_id::text, v.dict_form, v.reading, v.translation, v.last_saved_at, v.created_at
-		 FROM vocabs v
-		 JOIN courses c ON c.id = v.course_id
-		 WHERE v.id = $1 AND c.user_id = $2`,
-		vocabID, userID).Scan(&v.ID, &v.CourseID, &v.DictForm, &v.Reading, &v.Translation, &v.LastSavedAt, &v.CreatedAt)
+		`
+		SELECT v.id::text, v.course_id::text, v.dict_form, v.reading, v.translation, v.xp, v.correct_streak, v.last_reviewed_at, v.last_saved_at, v.created_at
+		FROM vocabs v
+		JOIN courses c ON c.id = v.course_id
+		WHERE v.id = $1 AND c.user_id = $2
+		`,
+		vocabID, userID).Scan(&v.ID, &v.CourseID, &v.DictForm, &v.Reading, &v.Translation, &v.XP, &v.CorrectStreak, &v.LastReviewedAt, &v.LastSavedAt, &v.CreatedAt)
 	// 22P02: vocabID is not a valid UUID, so no such vocab exists.
 	var pgErr *pgconn.PgError
 	if errors.Is(err, pgx.ErrNoRows) || (errors.As(err, &pgErr) && pgErr.Code == "22P02") {
@@ -126,11 +130,13 @@ func (r *PgVocabRepo) FindByID(ctx context.Context, userID, vocabID string) (*ag
 	}
 
 	rows, err := r.pool.Query(ctx,
-		`SELECT o.id::text, s.text, s.translation, o.span_start, o.span_end, o.surface, o.translation, o.from_part, o.created_at
-		 FROM occurrences o
-		 JOIN sentences s ON s.id = o.sentence_id
-		 WHERE o.vocab_id = $1
-		 ORDER BY o.created_at DESC, o.id DESC`, v.ID)
+		`
+		SELECT o.id::text, s.text, s.translation, o.span_start, o.span_end, o.surface, o.translation, o.from_part, o.created_at
+		FROM occurrences o
+		JOIN sentences s ON s.id = o.sentence_id
+		WHERE o.vocab_id = $1
+		ORDER BY o.created_at DESC, o.id DESC
+		`, v.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -146,31 +152,197 @@ func (r *PgVocabRepo) FindByID(ctx context.Context, userID, vocabID string) (*ag
 	return &v, nil
 }
 
+func (r *PgVocabRepo) ListForPractice(ctx context.Context, courseID string, limit int) ([]*aggregate.Vocab, error) {
+	rows, err := r.pool.Query(ctx,
+		`
+		SELECT
+			id::text,
+			dict_form,
+			reading,
+			translation,
+			xp,
+			correct_streak,
+			last_reviewed_at,
+			created_at
+		FROM vocabs
+		WHERE course_id = $1
+		ORDER BY extract(epoch FROM now() - coalesce(last_reviewed_at, created_at)) / 86400 / (1 + xp) DESC
+		LIMIT $2
+		`, courseID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	vocabs, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (*aggregate.Vocab, error) {
+		var v aggregate.Vocab
+		err := row.Scan(&v.ID, &v.DictForm, &v.Reading, &v.Translation, &v.XP, &v.CorrectStreak, &v.LastReviewedAt, &v.CreatedAt)
+		if err != nil {
+			return nil, err
+		}
+		return &v, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return vocabs, nil
+}
+
+func (r *PgVocabRepo) UpdateScore(ctx context.Context, vocabID string, xp, correctStreak int, lastReviewedAt time.Time) error {
+	_, err := r.pool.Exec(ctx,
+		`
+		UPDATE vocabs SET
+			xp = $1,
+			correct_streak = $2,
+			last_reviewed_at = $3
+		WHERE id = $4
+		`,
+		xp, correctStreak, lastReviewedAt, vocabID,
+	)
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.Code == "22P02" {
+		return errs.ErrNotFound
+	}
+	return err
+}
+
 func (r *PgVocabRepo) UpdateTranslation(ctx context.Context, vocabID, translation string) error {
 	_, err := r.pool.Exec(ctx, `UPDATE vocabs SET translation = $2 WHERE id = $1`, vocabID, translation)
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.Code == "22P02" {
+		return errs.ErrNotFound
+	}
 	return err
 }
 
 func (r *PgVocabRepo) Delete(ctx context.Context, userID, vocabID string) error {
-	var otherUsers bool
-	err := r.pool.QueryRow(ctx,
-		`WITH target AS (
-		   SELECT v.id, c.user_id FROM vocabs v JOIN courses c ON c.id = v.course_id WHERE v.id = $1
-		 ), del AS (
-		   DELETE FROM vocabs WHERE id IN (SELECT id FROM target WHERE user_id = $2)
-		 )
-		 SELECT EXISTS (SELECT 1 FROM target WHERE user_id <> $2)`,
-		vocabID, userID).Scan(&otherUsers)
-	// 22P02: vocabID is not a valid UUID, so there is nothing to delete.
-	var pgErr *pgconn.PgError
-	if errors.As(err, &pgErr) && pgErr.Code == "22P02" {
-		return nil
-	}
+	_, err := r.pool.Exec(ctx,
+		`
+		DELETE FROM vocabs v
+			USING courses c
+		WHERE
+			c.id = v.course_id AND
+			v.vocabID = $1 AND
+			c.user_id = $2
+		`,
+		vocabID, userID)
 	if err != nil {
 		return err
 	}
-	if otherUsers {
+
+	// 22P02: vocabID is not a valid UUID, so there is nothing to delete.
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.Code == "22P02" {
 		return errs.ErrNotFound
 	}
+
 	return nil
+}
+
+func (r *PgVocabRepo) FindOccurrencesByVocab(ctx context.Context, vocabID string) ([]*aggregate.Occurrence, error) {
+	rows, err := r.pool.Query(ctx,
+		`
+		SELECT
+			o.id::text,
+			s.text,
+			s.translation,
+			o.span_start,
+			o.span_end,
+			o.surface,
+			o.translation,
+			o.from_part,
+			o.created_at
+		FROM occurrences o
+		JOIN sentences s ON s.id = o.sentence_id
+		WHERE o.vocab_id = $1
+		`,
+		vocabID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	occurrences, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (*aggregate.Occurrence, error) {
+		var o aggregate.Occurrence
+		err := row.Scan(&o.ID, &o.Sentence, &o.SentenceTranslation, &o.Span.Start, &o.Span.End, &o.Surface, &o.Translation, &o.FromPart, &o.CreatedAt)
+		return &o, err
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return occurrences, nil
+}
+
+func (r *PgVocabRepo) FindDistractorVocabs(ctx context.Context, courseID string, limit int) ([]*aggregate.Vocab, error) {
+	rows, err := r.pool.Query(ctx,
+		`
+		SELECT id::text, dict_form, reading, translation
+		FROM vocabs
+		WHERE course_id = $1
+		ORDER BY random()
+		LIMIT $2
+		`,
+		courseID, limit)
+	if err != nil {
+		return nil, err
+	}
+	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (*aggregate.Vocab, error) {
+		var v aggregate.Vocab
+		err := row.Scan(&v.ID, &v.DictForm, &v.Reading, &v.Translation)
+		return &v, err
+	})
+}
+
+func (r *PgVocabRepo) FindQuizOccurrence(ctx context.Context, vocabID string) (*aggregate.Occurrence, error) {
+	var occurrence aggregate.Occurrence
+	// max skips answered_at NULL, they dont count
+	err := r.pool.QueryRow(ctx,
+		`
+		SELECT
+			o.id::text,
+			s.text,
+			s.translation,
+			o.span_start,
+			o.span_end,
+			o.surface,
+			o.translation,
+			o.from_part,
+			o.created_at
+		FROM occurrences o
+		JOIN sentences s ON s.id = o.sentence_id
+		WHERE
+			o.vocab_id = $1 AND
+			NOT o.from_part
+		ORDER BY
+			(
+				SELECT max(q.answered_at)
+				FROM questions q WHERE q.occurrence_id = o.id
+			) ASC NULLS FIRST,
+			o.created_at DESC,
+			o.id DESC
+		LIMIT 1
+		`,
+		vocabID,
+	).Scan(
+		&occurrence.ID,
+		&occurrence.Sentence,
+		&occurrence.SentenceTranslation,
+		&occurrence.Span.Start,
+		&occurrence.Span.End,
+		&occurrence.Surface,
+		&occurrence.Translation,
+		&occurrence.FromPart,
+		&occurrence.CreatedAt,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &occurrence, nil
 }

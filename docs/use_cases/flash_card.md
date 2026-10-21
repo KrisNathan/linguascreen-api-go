@@ -2,7 +2,7 @@
 
 Self-graded recall of the user's saved vocabs, without a sentence. Works for every vocab, including vocabs only saved from parts. Online only.
 
-Uses the same session and question tables as [Quiz](quiz.md), with `kind = flash_card`.
+No sessions: each self-grade is stored as a `FlashCardReview`, the client keeps the deck. The server only picks the vocabs and records reviews.
 
 ## Prerequisites
 
@@ -40,23 +40,23 @@ Uses the same session and question tables as [Quiz](quiz.md), with `kind = flash
 
 ### Output
 
-- session_id
-- questions: the unanswered ones, in order. The back of the card is included, there is nothing to hide in a self-graded exercise.
+- cards: vocabs to practice, in order. The back of the card is included, there is nothing to hide in a self-graded exercise.
 
 ```json
 {
-  "session_id": "...",
-  "questions": [
-    { "id": "...", "dict_form": "読む", "reading": "よむ", "translation": "to read" }
+  "cards": [
+    { "vocab_id": "...", "dict_form": "読む", "reading": "よむ", "translation": "to read" }
   ]
 }
 ```
 
-No vocab available returns `questions: []` and no session is created.
+No vocab available returns `cards: []`.
 
 ### Flow
 
-Same as [Quiz](quiz.md) Start, with `kind = flash_card`, `FLASH_CARD_SIZE` vocabs, no vocab skipped, and one `flash_card` question per vocab (no options).
+1. Check the course exists and belongs to the user, otherwise 404
+2. Pick up to `FLASH_CARD_SIZE` vocabs ([Scheduling](scheduling.md)), no vocab skipped
+3. Return
 
 Constants:
 
@@ -68,43 +68,26 @@ Constants:
 
 ### Input
 
-- question id
+- vocab id
 - correct: the user's self-grade
 
 ```json
 {
-  "question_id": "...",
+  "vocab_id": "...",
   "correct": false
 }
 ```
 
 ### Output
 
-- retry: when missed, a new question for the same vocab, appended to the end of the session. `null` when correct or out of attempts.
-- session_completed: `true` once no unanswered questions are left
-
-```json
-{
-  "retry": { "id": "...", "dict_form": "読む", "reading": "よむ", "translation": "to read" },
-  "session_completed": false
-}
-```
+`204 No Content`
 
 ### Flow
 
-1. Load the question with its session. If it doesn't exist or belongs to another user, 404.
-2. Session closed (expired) → 409
-3. Already answered → return the stored result unchanged
-4. Store `correct`, `answered_at = now`
-5. If missed and the vocab has fewer than `MAX_ATTEMPTS` questions in this session, append a new question for it at the end
-6. If no unanswered questions are left, close the session
-7. Return
+1. Load the vocab. If it doesn't exist or belongs to another user, 404.
+2. Insert a `FlashCardReview` with `correct` and `reviewed_at = now`
 
-Every attempt counts for scheduling. Missed then correct in the same session gives streak 1, due in 1 day.
-
-Constants:
-
-- `MAX_ATTEMPTS = 3` per vocab per session
+Every review updates the vocab's `xp` and `last_reviewed_at` like a quiz answer ([Scheduling](scheduling.md)). Re-showing missed cards within the same sitting is up to the client.
 
 ## Future
 

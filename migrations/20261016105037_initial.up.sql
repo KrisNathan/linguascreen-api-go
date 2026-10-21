@@ -51,6 +51,10 @@ CREATE TABLE vocabs (
   reading TEXT NOT NULL, -- empty string for languages without a separate reading
   translation TEXT NOT NULL,
 
+  xp INT NOT NULL DEFAULT 0,
+  correct_streak INT NOT NULL DEFAULT 0,
+  last_reviewed_at TIMESTAMPTZ, -- null until the first answer
+
   last_saved_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
   created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
 
@@ -113,20 +117,17 @@ CREATE TABLE practice_sessions (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   course_id UUID NOT NULL,
 
-  kind TEXT NOT NULL,
-
   created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
   closed_at TIMESTAMPTZ, -- completed or expired, null while open
 
   CONSTRAINT fk_course_id
     FOREIGN KEY (course_id)
     REFERENCES courses(id)
-    ON DELETE CASCADE,
-  CONSTRAINT ck_practice_session_kind CHECK (kind IN ('quiz', 'flash_card'))
+    ON DELETE CASCADE
 );
 
--- at most one open session per course and kind
-CREATE UNIQUE INDEX uk_practice_sessions_open ON practice_sessions (course_id, kind) WHERE closed_at IS NULL;
+-- at most one open session per course
+CREATE UNIQUE INDEX uk_practice_sessions_open ON practice_sessions (course_id) WHERE closed_at IS NULL;
 
 CREATE TABLE questions (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
@@ -137,9 +138,9 @@ CREATE TABLE questions (
   vocab_id UUID NOT NULL,
   occurrence_id UUID, -- fill_blank only
 
-  options TEXT[],      -- quiz only
-  correct_index INT,   -- quiz only, never sent before answering
-  answered_index INT,  -- quiz only, null until answered
+  options TEXT[] NOT NULL,
+  correct_index INT NOT NULL, -- never sent before answering
+  answered_index INT,         -- null until answered
   correct BOOL,        -- null until answered
   answered_at TIMESTAMPTZ, -- server time, null until answered
 
@@ -156,17 +157,27 @@ CREATE TABLE questions (
     REFERENCES occurrences(id)
     ON DELETE CASCADE,
   CONSTRAINT uk_question_position UNIQUE (session_id, position),
-  CONSTRAINT ck_question_type CHECK (type IN ('fill_blank', 'translation', 'reading', 'flash_card')),
+  CONSTRAINT ck_question_type CHECK (type IN ('fill_blank', 'translation', 'reading')),
   CONSTRAINT ck_question_fill_blank CHECK ((type = 'fill_blank') = (occurrence_id IS NOT NULL)),
   CONSTRAINT ck_question_options CHECK (
-    (type = 'flash_card' AND options IS NULL AND correct_index IS NULL AND answered_index IS NULL)
-    OR (type <> 'flash_card' AND cardinality(options) = 4 AND correct_index BETWEEN 0 AND 3
-        AND (answered_index IS NULL OR answered_index BETWEEN 0 AND 3))
+    cardinality(options) = 4 AND correct_index BETWEEN 0 AND 3
+    AND (answered_index IS NULL OR answered_index BETWEEN 0 AND 3)
   ),
   CONSTRAINT ck_question_answered CHECK ((answered_at IS NULL) = (correct IS NULL))
 );
 
--- scheduling: answered questions per vocab
-CREATE INDEX idx_questions_vocab_answered ON questions (vocab_id, answered_at) WHERE answered_at IS NOT NULL;
 -- fill_blank rotation: latest quiz per occurrence
 CREATE INDEX idx_questions_occurrence_answered ON questions (occurrence_id, answered_at) WHERE occurrence_id IS NOT NULL;
+
+-- self-graded, no session. Updates vocabs.xp like answered questions
+CREATE TABLE flash_card_reviews (
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  vocab_id UUID NOT NULL,
+  correct BOOL NOT NULL,
+  reviewed_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
+
+  CONSTRAINT fk_vocab_id
+    FOREIGN KEY (vocab_id)
+    REFERENCES vocabs(id)
+    ON DELETE CASCADE
+);

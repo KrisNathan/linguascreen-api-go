@@ -22,10 +22,9 @@ GET /courses/{course_id}/vocabs?limit=30&cursor=<opaque>
 ### Output
 
 - items: vocabs ordered by last saved, newest first
-  - progress: derived from answered questions (see [Scheduling](scheduling.md)), never stored
+  - progress (see [Scheduling](scheduling.md))
     - state: `new` (no answers) | `learning` | `known`
     - streak: correct answers in a row since the last miss
-    - due_at: when the vocab is next due, `null` when `new`
 - next_cursor: `null` on the last page
 
 ```json
@@ -38,7 +37,7 @@ GET /courses/{course_id}/vocabs?limit=30&cursor=<opaque>
       "translation": "to read",
       "occurrence_count": 3,
       "last_saved_at": "2026-10-18T10:00:00Z",
-      "progress": { "state": "learning", "streak": 2, "due_at": "2026-10-21T10:00:00Z" }
+      "progress": { "state": "learning", "streak": 2 }
     }
   ],
   "next_cursor": "..."
@@ -55,7 +54,7 @@ Not ordered by:
 
 - Created: saving a word again from a new sentence would leave it buried
 - Any update: the whole list would reshuffle after every quiz or edit
-- Progress (due, weakest): duplicates the quiz, and due is derived, so sorting would compute it for every vocab in the course on every page. Possible later as a filter once `due_at` is cached.
+- Progress (weakest): duplicates the quiz. Possible later as a filter.
 
 ### Pagination
 
@@ -72,9 +71,7 @@ Cursor (keyset) pagination, not offset. New vocabs saved while scrolling don't s
 1. Check the course exists and belongs to the user, otherwise 404
 2. Validate `limit` (1 to 100) and decode `cursor`, otherwise 400
 3. Fetch `limit + 1` vocabs. If the extra row exists there is a next page: drop it, and `next_cursor` is built from the last returned row.
-4. For the returned vocabs only, in one grouped query each:
-   1. Count occurrences
-   2. Load answered questions and derive progress
+4. Count occurrences for the returned vocabs only, in one grouped query
 
 ## Single vocab
 
@@ -95,7 +92,7 @@ The vocab (same fields as a list item) plus all its occurrences, newest first. N
   "reading": "よむ",
   "translation": "to read",
   "last_saved_at": "2026-10-18T10:00:00Z",
-  "progress": { "state": "learning", "streak": 2, "due_at": "2026-10-21T10:00:00Z" },
+  "progress": { "state": "learning", "streak": 2 },
   "occurrences": [
     {
       "id": "...",
@@ -115,7 +112,6 @@ The vocab (same fields as a list item) plus all its occurrences, newest first. N
 
 1. Load the vocab. If it doesn't exist or its course doesn't belong to the user, 404 (same response for both, so ids can't be probed).
 2. Load its occurrences with their sentences
-3. Load its answered questions and derive progress
 
 ## Out of scope
 

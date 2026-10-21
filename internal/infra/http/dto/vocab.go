@@ -25,9 +25,8 @@ func NewSavedVocab(r *usecase.SaveVocabResult) SavedVocab {
 }
 
 type Progress struct {
-	State  string  `json:"state"`
-	Streak int     `json:"streak"`
-	DueAt  *string `json:"due_at"`
+	State  string `json:"state"`
+	Streak int    `json:"streak"`
 }
 
 type VocabItem struct {
@@ -85,18 +84,18 @@ func NewVocabItem(v *aggregate.Vocab) VocabItem {
 		Translation:     v.Translation,
 		OccurrenceCount: v.OccurrenceCount,
 		LastSavedAt:     formatTime(v.LastSavedAt),
-		Progress:        newProgress(v.Progress),
+		Progress:        newProgress(v.Progress()),
 	}
 }
 
-func NewVocabDetail(v *aggregate.Vocab) VocabDetail {
+func NewVocabDetail(v *aggregate.VocabDetail) VocabDetail {
 	d := VocabDetail{
 		ID:          v.ID,
 		DictForm:    v.DictForm,
 		Reading:     v.Reading,
 		Translation: v.Translation,
 		LastSavedAt: formatTime(v.LastSavedAt),
-		Progress:    newProgress(v.Progress),
+		Progress:    newProgress(v.Progress()),
 		Occurrences: make([]Occurrence, len(v.Occurrences)),
 	}
 	for i, o := range v.Occurrences {
@@ -115,12 +114,7 @@ func NewVocabDetail(v *aggregate.Vocab) VocabDetail {
 }
 
 func newProgress(p valueobject.Progress) Progress {
-	out := Progress{State: p.State, Streak: p.Streak}
-	if p.DueAt != nil {
-		s := formatTime(*p.DueAt)
-		out.DueAt = &s
-	}
-	return out
+	return Progress{State: p.State, Streak: p.Streak}
 }
 
 func formatTime(t time.Time) string { return t.UTC().Format(time.RFC3339) }

@@ -6,6 +6,7 @@ var (
 	ErrNotFound     = errors.New("not found")
 	ErrUnauthorized = errors.New("unauthorized")
 	ErrInvalidInput = errors.New("invalid input")
+	ErrConflict     = errors.New("conflict")
 	ErrUpstream     = errors.New("upstream error")
 )
 

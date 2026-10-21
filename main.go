@@ -13,6 +13,7 @@ import (
 
 	"github.com/KrisNathan/linguascreen-api-go/internal/application/service"
 	"github.com/KrisNathan/linguascreen-api-go/internal/application/usecase"
+	domainservice "github.com/KrisNathan/linguascreen-api-go/internal/domain/service"
 	"github.com/KrisNathan/linguascreen-api-go/internal/infra/google"
 	httpinfra "github.com/KrisNathan/linguascreen-api-go/internal/infra/http"
 	"github.com/KrisNathan/linguascreen-api-go/internal/infra/http/handler"
@@ -81,9 +82,12 @@ func main() {
 	refreshTokenRepo := repoinfra.NewPgRefreshTokenRepo(pool)
 	courseRepo := repoinfra.NewPgCourseRepo(pool)
 	vocabRepo := repoinfra.NewPgVocabRepo(pool)
+	sessionRepo := repoinfra.NewPgPracticeSessionRepo(pool)
+	flashCardRepo := repoinfra.NewPgFlashCardRepo(pool)
 	sentenceAnalyzer := openaiinfra.NewSentenceAnalyzer(&openaiClient, OPENAI_MODEL)
 	sentenceExplainer := openaiinfra.NewSentenceExplainer(&openaiClient, OPENAI_MODEL)
 	session := service.NewSession(refreshTokenRepo, tokenService)
+	quizService := domainservice.NewQuizService(vocabRepo)
 
 	router := httpinfra.NewRouter(httpinfra.Handlers{
 		SignIn:          handler.NewSignIn(usecase.NewSignIn(idTokenVerifier, userRepo, session)),
@@ -98,6 +102,10 @@ func main() {
 		GetVocab:        handler.NewGetVocab(usecase.NewGetVocab(vocabRepo)),
 		UpdateVocab:     handler.NewUpdateVocab(usecase.NewUpdateVocab(vocabRepo)),
 		DeleteVocab:     handler.NewDeleteVocab(usecase.NewDeleteVocab(vocabRepo)),
+		StartQuiz:       handler.NewStartQuiz(usecase.NewStartQuiz(courseRepo, sessionRepo, quizService)),
+		SubmitQuiz:      handler.NewSubmitQuiz(usecase.NewSubmitQuiz(sessionRepo)),
+		StartFlashCards: handler.NewStartFlashCards(usecase.NewStartFlashCards(courseRepo, vocabRepo)),
+		SubmitFlashCard: handler.NewSubmitFlashCard(usecase.NewSubmitFlashCard(vocabRepo, flashCardRepo)),
 	}, tokenService, PROD)
 
 	srv := &http.Server{Addr: ":8080", Handler: router}

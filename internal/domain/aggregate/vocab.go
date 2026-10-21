@@ -11,20 +11,30 @@ import (
 	"golang.org/x/text/unicode/norm"
 )
 
-const MaxTranslationLength = 200 // runes
+const (
+	MaxTranslationLength = 200 // runes
+	WrongPenalty         = 2
+	KnownXP              = 5
+)
 
 type Vocab struct {
-	ID          string
-	CourseID    string
-	DictForm    string
-	Reading     string
-	Translation string
-	LastSavedAt time.Time
-	CreatedAt   time.Time
-	Progress    valueobject.Progress
+	ID             string
+	CourseID       string
+	DictForm       string
+	Reading        string
+	Translation    string
+	XP             int
+	CorrectStreak  int
+	LastReviewedAt *time.Time // nil until the first answer
+	LastSavedAt    time.Time
+	CreatedAt      time.Time
 
 	OccurrenceCount int
-	Occurrences     []Occurrence
+}
+
+type VocabDetail struct {
+	*Vocab
+	Occurrences []Occurrence
 }
 
 // NewVocab normalizes the fields so the same word from different LLM calls
@@ -57,6 +67,29 @@ func (v *Vocab) SetTranslation(translation string) error {
 	}
 	v.Translation = t
 	return nil
+}
+
+// RecordAnswer updates the practice score, see docs/use_cases/scheduling.md.
+func (v *Vocab) RecordAnswer(correct bool, now time.Time) {
+	if correct {
+		v.XP++
+		v.CorrectStreak++
+	} else {
+		v.XP = max(0, v.XP-WrongPenalty)
+		v.CorrectStreak = 0
+	}
+	v.LastReviewedAt = &now
+}
+
+func (v *Vocab) Progress() valueobject.Progress {
+	state := valueobject.ProgressLearning
+	switch {
+	case v.LastReviewedAt == nil:
+		state = valueobject.ProgressNew
+	case v.XP >= KnownXP:
+		state = valueobject.ProgressKnown
+	}
+	return valueobject.Progress{State: state, Streak: v.CorrectStreak}
 }
 
 func normalizeField(s string) string {

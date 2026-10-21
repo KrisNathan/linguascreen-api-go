@@ -5,7 +5,6 @@ import (
 
 	"github.com/KrisNathan/linguascreen-api-go/internal/domain/aggregate"
 	"github.com/KrisNathan/linguascreen-api-go/internal/domain/repo"
-	"github.com/KrisNathan/linguascreen-api-go/internal/domain/valueobject"
 )
 
 type UpdateVocab struct {
@@ -27,6 +26,5 @@ func (uc *UpdateVocab) Exec(ctx context.Context, userID, vocabID, translation st
 	if err := uc.vocabRepo.UpdateTranslation(ctx, v.ID, v.Translation); err != nil {
 		return nil, err
 	}
-	v.Progress = valueobject.Progress{State: valueobject.ProgressNew} // TODO: derive from answered questions once Quiz exists
-	return v, nil
+	return v.Vocab, nil
 }

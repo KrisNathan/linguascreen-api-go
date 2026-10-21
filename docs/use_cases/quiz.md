@@ -79,7 +79,7 @@ No vocab available returns `questions: []` and no session is created. The client
 ### Flow
 
 1. Check the course exists and belongs to the user, otherwise 404
-2. Find the course's open quiz session (`closed_at` is null)
+2. Find the course's open session (`closed_at` is null)
    1. Created less than 24 hours ago and has unanswered questions: return it with its unanswered questions
    2. Otherwise (expired, or nothing left after vocabs were unsaved): close it (`closed_at = now`). Unanswered questions are ignored by scheduling.
 3. Pick up to `QUIZ_SIZE` vocabs ([Scheduling](scheduling.md)), skipping vocabs with no eligible question type
@@ -87,7 +87,7 @@ No vocab available returns `questions: []` and no session is created. The client
 5. In one transaction: insert the session and its questions
 6. Return
 
-A unique index on (course id, kind) where `closed_at` is null prevents two simultaneous starts from creating two open sessions.
+A unique index on (course id) where `closed_at` is null prevents two simultaneous starts from creating two open sessions.
 
 Constants:
 
@@ -145,7 +145,7 @@ Score: `correct` = correct answers, `answered` = answered questions, `total` = q
 
 ## Stored data
 
-See `PracticeSession` and `Question` in the ERD. A session has `kind = quiz`. Options are stored as text, so editing a vocab's translation mid-session doesn't change a question already created.
+See `PracticeSession` and `Question` in the ERD. Options are stored as text, so editing a vocab's translation mid-session doesn't change a question already created.
 
 ## Future
 

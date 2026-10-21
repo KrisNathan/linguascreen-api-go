@@ -20,6 +20,10 @@ type Handlers struct {
 	GetVocab        *handler.GetVocab
 	UpdateVocab     *handler.UpdateVocab
 	DeleteVocab     *handler.DeleteVocab
+	StartQuiz       *handler.StartQuiz
+	SubmitQuiz      *handler.SubmitQuiz
+	StartFlashCards *handler.StartFlashCards
+	SubmitFlashCard *handler.SubmitFlashCard
 }
 
 func NewRouter(h Handlers, tokenService port.TokenService, isProd bool) *gin.Engine {
@@ -51,6 +55,10 @@ func NewRouter(h Handlers, tokenService port.TokenService, isProd bool) *gin.Eng
 	api.GET("/vocabs/:vocab_id", h.GetVocab.Handle)
 	api.PATCH("/vocabs/:vocab_id", h.UpdateVocab.Handle)
 	api.DELETE("/vocabs/:vocab_id", h.DeleteVocab.Handle)
+	api.POST("/quiz/start", h.StartQuiz.Handle)
+	api.POST("/quiz/submit", h.SubmitQuiz.Handle)
+	api.POST("/flash-card/start", h.StartFlashCards.Handle)
+	api.POST("/flash-card/submit", h.SubmitFlashCard.Handle)
 
 	return router
 }

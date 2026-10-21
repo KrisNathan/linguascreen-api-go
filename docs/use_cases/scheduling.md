@@ -1,81 +1,62 @@
 # Scheduling
 
-Decides which vocabs to practice and when. Used by [Quiz](quiz.md) and [Flash Card](flash_card.md) to pick vocabs, and by [View Vocabs](view_vocabs.md) to show progress.
+Decides which vocabs to practice. Used by [Quiz](quiz.md) and [Flash Card](flash_card.md) to pick vocabs.
 
 Practice is online only (AI features need a connection anyway), so the server creates every session and grades every answer.
 
-## Source of truth
+## Score
 
-Answered questions (see `Question` in the ERD) are the only stored facts. Progress is derived from them on every request, never stored.
+Each vocab stores `xp` and `correct_streak` (both start at 0) and `last_reviewed_at` (null until the first answer, which means the vocab is new). All three are updated on every answer:
 
-- A question counts once it has `answered_at`. Unanswered questions (e.g. an abandoned session) are ignored.
-- Quiz and flash card answers count the same (self-graded flash cards included)
-- `answered_at` is server time
+- Correct: `xp += 1`, `correct_streak += 1`
+- Wrong: `xp = max(0, xp - WRONG_PENALTY)`, `correct_streak = 0`
+- `last_reviewed_at = now` (server time)
 
-## Ladder
+Quiz answers and flash card reviews count the same (self-graded flash cards included). Unanswered questions (e.g. an abandoned session) change nothing.
+
+## Priority
 
 ```
-LADDER = [1, 3, 7, 14, 30, 60, 120]   # days
-
-last_answered_at = latest answered_at of the vocab
-streak           = correct answers after the latest wrong one (all of them if never wrong)
-interval         = streak == 0 ? 1 : LADDER[min(streak, 7) - 1]
-due_at           = last_answered_at + interval days
-state            = no answers → new;  streak >= 5 → known;  otherwise learning
+priority = days_since(coalesce(last_reviewed_at, created_at)) / (1 + xp)
 ```
 
-| Answer | Result | Streak | Due in |
-| --- | --- | --- | --- |
-| 1 | correct | 1 | 1 day |
-| 2 | correct | 2 | 3 days |
-| 3 | correct | 3 | 7 days |
-| 4 | wrong | 0 | 1 day |
-| 5 | correct | 1 | 1 day |
+A new vocab counts its age from `created_at`. Highest priority first. The more xp a vocab has, the less each day of age counts, so it takes longer to come back.
 
-Changing the rule (e.g. to FSRS) is a code change only. The answer history is replayed through the new rule, no migration.
-
-## Query
-
-Streak and last answer for a set of vocabs, in one query (the ladder is applied in Go):
-
-```sql
-WITH answered AS (
-  SELECT vocab_id, correct, answered_at
-  FROM question
-  WHERE answered_at IS NOT NULL AND vocab_id = ANY($1)
-),
-last_wrong AS (
-  SELECT vocab_id, max(answered_at) AS t
-  FROM answered
-  WHERE NOT correct
-  GROUP BY vocab_id
-)
-SELECT a.vocab_id,
-       max(a.answered_at) AS last_answered_at,
-       count(*) FILTER (WHERE a.correct AND a.answered_at > coalesce(w.t, '-infinity')) AS streak
-FROM answered a
-LEFT JOIN last_wrong w USING (vocab_id)
-GROUP BY a.vocab_id;
-```
-
-Index: `question (vocab_id, answered_at) WHERE answered_at IS NOT NULL`.
-
-Starting a session computes this for every vocab in the course (e.g. 2,000 vocabs × 20 answers = 40k rows, milliseconds). When that gets slow, cache `due_at` on the vocab and update it on every answer. It stays rebuildable from the answers.
+- A new vocab (xp 0) has priority equal to its age in days
+- A vocab with xp 4 needs 5 times as long to reach the same priority
+- A vocab just answered has priority near 0, so it doesn't repeat right away
+- A wrong answer lowers xp, so the priority jumps up and it comes back soon
+- Priority keeps growing with time, so even a strong vocab eventually comes back
 
 ## Picking vocabs for a session
 
-Given a course and a size:
+Given a course and a size, take the vocabs with the highest priority:
 
-1. Compute progress for every vocab in the course
-2. Due: `due_at <= now`, most overdue first
-3. New: no answers, oldest saved first, up to `NEW_PER_DAY - (vocabs whose first answer was in the last 24 hours)`
-4. Take due first, then new, up to the size. Fewer available means a shorter session. None means "nothing to practice".
+```sql
+SELECT ... FROM vocabs
+WHERE course_id = $1
+ORDER BY extract(epoch FROM now() - coalesce(last_reviewed_at, created_at)) / 86400 / (1 + xp) DESC
+LIMIT $2
+```
 
-The caller may skip vocabs it can't use (e.g. the quiz skips vocabs with no eligible question type) and take the next one.
+There is no due cutoff, so a session is always full while the course has enough vocabs. Fewer vocabs than the size means a shorter session. No vocabs means "nothing to practice".
+
+The caller may skip vocabs it can't use (e.g. the quiz skips vocabs with no eligible question type). It asks for extra (e.g. `size * 2`) and takes the first that fit.
 
 Constants:
 
-- `NEW_PER_DAY = 10`. A rolling 24 hours instead of a calendar day, so no timezone is needed.
+- `WRONG_PENALTY = 2`. Larger than the +1 for a correct answer, so a hard vocab doesn't drift away.
+
+## State
+
+Shown in [View Vocabs](view_vocabs.md), derived from the stored fields:
+
+```
+state = last_reviewed_at is null → new;  xp >= KNOWN_XP → known;  otherwise learning
+```
+
+- `KNOWN_XP = 5`. Uses xp rather than the streak so the state agrees with the priority, and one miss doesn't demote a well-known vocab. `last_reviewed_at` is still needed for `new`, since xp can drop back to 0.
+- streak: `correct_streak`, shown only as a number
 
 ## Trust model
 
@@ -85,7 +66,6 @@ Constants:
 
 ## Future
 
-- Cache `due_at` on the vocab
-- FSRS instead of the ladder
-- `NEW_PER_DAY` per course, user configurable
-- Calendar day in the user's timezone instead of a rolling 24 hours
+- A due cutoff, so "nothing to practice" can happen (e.g. `last_reviewed_at < now - 1 day`)
+- Faster growth than linear (e.g. divide by `2^min(xp, 7)`)
+- FSRS instead of xp

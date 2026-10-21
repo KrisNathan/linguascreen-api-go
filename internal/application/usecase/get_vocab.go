@@ -5,7 +5,6 @@ import (
 
 	"github.com/KrisNathan/linguascreen-api-go/internal/domain/aggregate"
 	"github.com/KrisNathan/linguascreen-api-go/internal/domain/repo"
-	"github.com/KrisNathan/linguascreen-api-go/internal/domain/valueobject"
 )
 
 type GetVocab struct {
@@ -16,11 +15,10 @@ func NewGetVocab(vocabRepo repo.VocabRepo) *GetVocab {
 	return &GetVocab{vocabRepo: vocabRepo}
 }
 
-func (uc *GetVocab) Exec(ctx context.Context, userID, vocabID string) (*aggregate.Vocab, error) {
+func (uc *GetVocab) Exec(ctx context.Context, userID, vocabID string) (*aggregate.VocabDetail, error) {
 	v, err := uc.vocabRepo.FindByID(ctx, userID, vocabID)
 	if err != nil {
 		return nil, err
 	}
-	v.Progress = valueobject.Progress{State: valueobject.ProgressNew} // TODO: derive from answered questions once Quiz exists
 	return v, nil
 }
