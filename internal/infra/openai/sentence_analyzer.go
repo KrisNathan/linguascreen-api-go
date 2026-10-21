@@ -28,6 +28,7 @@ func (a *SentenceAnalyzer) Analyze(ctx context.Context, sentence valueobject.Sen
 	prompt := strings.NewReplacer(
 		"{{learning_language}}", learning.Name(),
 		"{{base_language}}", base.Name(),
+		"{{language_rules}}", languageRules[learning.String()],
 	).Replace(systemPrompt)
 
 	chat, err := a.client.Chat.Completions.New(ctx,
@@ -38,7 +39,7 @@ func (a *SentenceAnalyzer) Analyze(ctx context.Context, sentence valueobject.Sen
 				openai.UserMessage(sentence.Text),
 			},
 			Temperature:     openai.Float(0),
-			ReasoningEffort: openai.ReasoningEffortNone,
+			ReasoningEffort: openai.ReasoningEffortLow,
 			ResponseFormat: openai.ChatCompletionNewParamsResponseFormatUnion{
 				OfJSONSchema: &shared.ResponseFormatJSONSchemaParam{
 					JSONSchema: shared.ResponseFormatJSONSchemaJSONSchemaParam{
@@ -155,39 +156,3 @@ var analysisSchema = map[string]any{
 	"required":             []string{"translation", "language_mismatch", "tokens"},
 	"additionalProperties": false,
 }
-
-// PromptVersion must be bumped whenever systemPrompt or analysisSchema changes,
-// so cached results are no longer served.
-const (
-	PromptVersion = 1
-
-	// From docs/use_cases/analyze_sentence.md, adjusted for strict mode (empty strings and arrays instead of omitted fields).
-	systemPrompt = `You are a language-learning assistant. The user is learning {{learning_language}} and their native language is {{base_language}}. They will send you one sentence in {{learning_language}}, usually extracted by OCR from a book or a screen.
-
-Your job:
-1. Translate the whole sentence into {{base_language}}.
-2. Split the sentence into tokens so the learner can tap any word to see what it means.
-3. Set language_mismatch to true if the sentence is mostly not in {{learning_language}}. Still translate and tokenize it.
-
-Tokens:
-- Copy the sentence exactly. The surfaces of all tokens, joined in order, must reproduce the sentence character for character. Do not fix typos or OCR errors, do not convert characters, punctuation or width (keep "！" as "！"), do not add or drop spaces. Punctuation, symbols and spaces are tokens too.
-- A token is a unit a learner would look up in a dictionary. Keep an inflected word together with its inflection and auxiliaries as one token (e.g. 読みます, 走った, 食べさせられなかった), not split into grammatical pieces.
-- saveable is false for punctuation, symbols, spaces, numbers, and grammatical function words that carry no dictionary meaning on their own (e.g. Japanese particles like を, が, に, Chinese 的, 了). Otherwise true. Only saveable tokens need dict_form, reading and translation; for other tokens set them to empty strings and parts to an empty array.
-
-For each saveable token:
-- dict_form: the dictionary (lemma) form, e.g. 読みます → 読む, 走った → 走る. For languages that do not inflect, the word itself.
-- reading: the pronunciation of dict_form.
-  - Japanese: hiragana. For words written only in kana, repeat dict_form.
-  - Chinese: pinyin with tone marks, syllables separated by spaces (e.g. yín háng). Pick the pronunciation that fits this sentence (e.g. 长 is cháng in 很长, zhǎng in 长大).
-  - Languages without a separate reading system: empty string.
-- translation: a short dictionary-style meaning in {{base_language}} for the sense used in this sentence, 1 to 4 words, no explanations. In English, write verbs as "to ..." (e.g. "to read").
-
-Parts:
-- If a token is a compound made of smaller words that are worth learning on their own, add parts (e.g. 火车站 → 火车 + 站, 国際連合 → 国際 + 連合). Otherwise set parts to an empty array.
-- Do not split inflections or grammatical endings into parts.
-- The part surfaces, joined in order, must reproduce the token's surface exactly.
-- Each part has its own dict_form, reading and translation, following the rules above. Parts have no parts.
-
-Sentence translation:
-- Natural and faithful, in {{base_language}}. If the text looks garbled by OCR, translate your best interpretation, but still copy the token surfaces exactly as given.`
-)
