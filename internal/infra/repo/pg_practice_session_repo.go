@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/KrisNathan/linguascreen-api-go/internal/domain/aggregate"
+	"github.com/KrisNathan/linguascreen-api-go/internal/domain/entity"
 	"github.com/KrisNathan/linguascreen-api-go/internal/domain/valueobject"
 	"github.com/KrisNathan/linguascreen-api-go/internal/errs"
 	"github.com/jackc/pgx/v5"
@@ -121,7 +122,7 @@ func (r *PgPracticeSessionRepo) findQuestions(ctx context.Context, sessionID str
 		q.Type = valueobject.QuestionTypeFromString(typ)
 		q.Vocab.ID = q.VocabID
 		if q.OccurrenceID != nil {
-			q.Occurrence = &aggregate.Occurrence{
+			q.Occurrence = &entity.Occurrence{
 				ID:                  *q.OccurrenceID,
 				Sentence:            *sentence,
 				SentenceTranslation: *sentenceTranslation,

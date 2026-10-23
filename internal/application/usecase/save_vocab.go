@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/KrisNathan/linguascreen-api-go/internal/domain/aggregate"
+	"github.com/KrisNathan/linguascreen-api-go/internal/domain/entity"
 	"github.com/KrisNathan/linguascreen-api-go/internal/domain/repo"
 	"github.com/KrisNathan/linguascreen-api-go/internal/domain/valueobject"
 	"github.com/KrisNathan/linguascreen-api-go/internal/errs"
@@ -61,7 +62,7 @@ func (uc *SaveVocab) Exec(ctx context.Context, userID string, in SaveVocabInput)
 		return nil, err
 	}
 
-	occ := aggregate.Occurrence{Span: in.Span, Surface: surface, Translation: vocab.Translation, FromPart: in.FromPart}
+	occ := entity.Occurrence{Span: in.Span, Surface: surface, Translation: vocab.Translation, FromPart: in.FromPart}
 	vocabCreated, occCreated, err := uc.vocabRepo.Save(ctx, *sentence, in.SentenceTranslation, vocab, &occ)
 	if err != nil {
 		return nil, err

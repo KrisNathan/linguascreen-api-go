@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/KrisNathan/linguascreen-api-go/internal/domain/aggregate"
+	"github.com/KrisNathan/linguascreen-api-go/internal/domain/entity"
 	domainrepo "github.com/KrisNathan/linguascreen-api-go/internal/domain/repo"
 	"github.com/KrisNathan/linguascreen-api-go/internal/domain/valueobject"
 	"github.com/KrisNathan/linguascreen-api-go/internal/errs"
@@ -24,7 +25,7 @@ func NewPgVocabRepo(pool *pgxpool.Pool) *PgVocabRepo {
 
 // The no-op DO UPDATEs make RETURNING give back existing rows; xmax = 0 only
 // for a row this statement inserted. Existing rows keep their translation.
-func (r *PgVocabRepo) Save(ctx context.Context, sentence valueobject.Sentence, sentenceTranslation string, vocab *aggregate.Vocab, occ *aggregate.Occurrence) (vocabCreated, occurrenceCreated bool, err error) {
+func (r *PgVocabRepo) Save(ctx context.Context, sentence valueobject.Sentence, sentenceTranslation string, vocab *aggregate.Vocab, occ *entity.Occurrence) (vocabCreated, occurrenceCreated bool, err error) {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		return false, false, err
@@ -140,8 +141,8 @@ func (r *PgVocabRepo) FindByID(ctx context.Context, userID, vocabID string) (*ag
 	if err != nil {
 		return nil, err
 	}
-	v.Occurrences, err = pgx.CollectRows(rows, func(row pgx.CollectableRow) (aggregate.Occurrence, error) {
-		var o aggregate.Occurrence
+	v.Occurrences, err = pgx.CollectRows(rows, func(row pgx.CollectableRow) (entity.Occurrence, error) {
+		var o entity.Occurrence
 		err := row.Scan(&o.ID, &o.Sentence, &o.SentenceTranslation, &o.Span.Start, &o.Span.End, &o.Surface, &o.Translation, &o.FromPart, &o.CreatedAt)
 		return o, err
 	})
@@ -240,7 +241,7 @@ func (r *PgVocabRepo) Delete(ctx context.Context, userID, vocabID string) error 
 	return nil
 }
 
-func (r *PgVocabRepo) FindOccurrencesByVocab(ctx context.Context, vocabID string) ([]*aggregate.Occurrence, error) {
+func (r *PgVocabRepo) FindOccurrencesByVocab(ctx context.Context, vocabID string) ([]*entity.Occurrence, error) {
 	rows, err := r.pool.Query(ctx,
 		`
 		SELECT
@@ -264,8 +265,8 @@ func (r *PgVocabRepo) FindOccurrencesByVocab(ctx context.Context, vocabID string
 	}
 	defer rows.Close()
 
-	occurrences, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (*aggregate.Occurrence, error) {
-		var o aggregate.Occurrence
+	occurrences, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (*entity.Occurrence, error) {
+		var o entity.Occurrence
 		err := row.Scan(&o.ID, &o.Sentence, &o.SentenceTranslation, &o.Span.Start, &o.Span.End, &o.Surface, &o.Translation, &o.FromPart, &o.CreatedAt)
 		return &o, err
 	})
@@ -297,8 +298,8 @@ func (r *PgVocabRepo) FindDistractorVocabs(ctx context.Context, courseID string,
 	})
 }
 
-func (r *PgVocabRepo) FindQuizOccurrence(ctx context.Context, vocabID string) (*aggregate.Occurrence, error) {
-	var occurrence aggregate.Occurrence
+func (r *PgVocabRepo) FindQuizOccurrence(ctx context.Context, vocabID string) (*entity.Occurrence, error) {
+	var occurrence entity.Occurrence
 	// max skips answered_at NULL, they dont count
 	err := r.pool.QueryRow(ctx,
 		`

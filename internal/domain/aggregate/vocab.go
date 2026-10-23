@@ -6,6 +6,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/KrisNathan/linguascreen-api-go/internal/domain/entity"
 	"github.com/KrisNathan/linguascreen-api-go/internal/domain/valueobject"
 	"github.com/KrisNathan/linguascreen-api-go/internal/errs"
 	"golang.org/x/text/unicode/norm"
@@ -34,7 +35,7 @@ type Vocab struct {
 
 type VocabDetail struct {
 	*Vocab
-	Occurrences []Occurrence
+	Occurrences []entity.Occurrence
 }
 
 // NewVocab normalizes the fields so the same word from different LLM calls

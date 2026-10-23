@@ -10,11 +10,11 @@ import (
 
 func span(start, end int) valueobject.Span { return valueobject.Span{Start: start, End: end} }
 
-func word(surface, dictForm, translation string) Token {
-	return Token{Surface: surface, Saveable: true, DictForm: dictForm, Reading: "r", Translation: translation}
+func word(surface, dictForm, translation string) valueobject.Token {
+	return valueobject.Token{Surface: surface, Saveable: true, DictForm: dictForm, Reading: "r", Translation: translation}
 }
 
-func align(t *testing.T, text string, tokens []Token) ([]Token, error) {
+func align(t *testing.T, text string, tokens []valueobject.Token) ([]valueobject.Token, error) {
 	t.Helper()
 	s, err := valueobject.NewSentence(text)
 	if err != nil {
@@ -26,7 +26,7 @@ func align(t *testing.T, text string, tokens []Token) ([]Token, error) {
 }
 
 func TestAlignSpans(t *testing.T) {
-	got, err := align(t, "よく本を読みます。", []Token{
+	got, err := align(t, "よく本を読みます。", []valueobject.Token{
 		word("よく", "よく", "often"),
 		word("本", "本", "book"),
 		{Surface: "を"},
@@ -45,7 +45,7 @@ func TestAlignSpans(t *testing.T) {
 }
 
 func TestAlignFillsGaps(t *testing.T) {
-	got, err := align(t, "I read books.", []Token{
+	got, err := align(t, "I read books.", []valueobject.Token{
 		word("I", "I", "I"),
 		word("read", "read", "to read"),
 		word("books", "book", "books"),
@@ -53,7 +53,7 @@ func TestAlignFillsGaps(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []Token{
+	want := []valueobject.Token{
 		{Surface: "I", Span: span(0, 1), Saveable: true, DictForm: "I", Reading: "r", Translation: "I"},
 		{Surface: " ", Span: span(1, 2)},
 		{Surface: "read", Span: span(2, 6), Saveable: true, DictForm: "read", Reading: "r", Translation: "to read"},
@@ -67,14 +67,14 @@ func TestAlignFillsGaps(t *testing.T) {
 }
 
 func TestAlignAlteredSurface(t *testing.T) {
-	_, err := align(t, "走った", []Token{word("走る", "走る", "to run")})
+	_, err := align(t, "走った", []valueobject.Token{word("走る", "走る", "to run")})
 	if !errors.Is(err, ErrMisaligned) {
 		t.Errorf("err = %v, want ErrMisaligned", err)
 	}
 }
 
 func TestAlignCountsRunes(t *testing.T) {
-	got, err := align(t, "😀本", []Token{{Surface: "😀"}, word("本", "本", "book")})
+	got, err := align(t, "😀本", []valueobject.Token{{Surface: "😀"}, word("本", "本", "book")})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -84,15 +84,15 @@ func TestAlignCountsRunes(t *testing.T) {
 }
 
 func TestAlignDropsEmptyAndDemotes(t *testing.T) {
-	got, err := align(t, "本を", []Token{
+	got, err := align(t, "本を", []valueobject.Token{
 		{Surface: ""},
 		word("本", "本", ""), // missing translation
-		{Surface: "を", Saveable: false, DictForm: "を", Parts: []Part{{Surface: "を"}}},
+		{Surface: "を", Saveable: false, DictForm: "を", Parts: []valueobject.Part{{Surface: "を"}}},
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []Token{{Surface: "本", Span: span(0, 1)}, {Surface: "を", Span: span(1, 2)}}
+	want := []valueobject.Token{{Surface: "本", Span: span(0, 1)}, {Surface: "を", Span: span(1, 2)}}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got  %+v\nwant %+v", got, want)
 	}
@@ -100,8 +100,8 @@ func TestAlignDropsEmptyAndDemotes(t *testing.T) {
 
 func TestAlignParts(t *testing.T) {
 	station := word("火车站", "火车站", "train station")
-	station.Parts = []Part{{Surface: "火车", DictForm: "火车"}, {Surface: ""}, {Surface: "站", DictForm: "站"}}
-	got, err := align(t, "去火车站", []Token{word("去", "去", "to go"), station})
+	station.Parts = []valueobject.Part{{Surface: "火车", DictForm: "火车"}, {Surface: ""}, {Surface: "站", DictForm: "站"}}
+	got, err := align(t, "去火车站", []valueobject.Token{word("去", "去", "to go"), station})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -113,8 +113,8 @@ func TestAlignParts(t *testing.T) {
 
 func TestAlignDropsBadParts(t *testing.T) {
 	station := word("火车站", "火车站", "train station")
-	station.Parts = []Part{{Surface: "火车"}, {Surface: "车站"}}
-	got, err := align(t, "火车站", []Token{station})
+	station.Parts = []valueobject.Part{{Surface: "火车"}, {Surface: "车站"}}
+	got, err := align(t, "火车站", []valueobject.Token{station})
 	if err != nil {
 		t.Fatal(err)
 	}

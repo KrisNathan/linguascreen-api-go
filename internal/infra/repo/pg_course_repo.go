@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/KrisNathan/linguascreen-api-go/internal/domain/aggregate"
+	"github.com/KrisNathan/linguascreen-api-go/internal/domain/entity"
 	"github.com/KrisNathan/linguascreen-api-go/internal/domain/valueobject"
 	"github.com/KrisNathan/linguascreen-api-go/internal/errs"
 	"github.com/jackc/pgx/v5"
@@ -21,8 +21,8 @@ func NewPgCourseRepo(pool *pgxpool.Pool) *PgCourseRepo {
 	return &PgCourseRepo{pool: pool}
 }
 
-func (r *PgCourseRepo) Create(ctx context.Context, userID string, baseLanguage, learningLanguage valueobject.Language) (*aggregate.Course, error) {
-	c := aggregate.Course{UserID: userID, BaseLanguage: baseLanguage, LearningLanguage: learningLanguage}
+func (r *PgCourseRepo) Create(ctx context.Context, userID string, baseLanguage, learningLanguage valueobject.Language) (*entity.Course, error) {
+	c := entity.Course{UserID: userID, BaseLanguage: baseLanguage, LearningLanguage: learningLanguage}
 	err := r.pool.QueryRow(ctx,
 		`INSERT INTO courses (user_id, base_language, learning_language)
 		 VALUES ($1, $2, $3)
@@ -35,7 +35,7 @@ func (r *PgCourseRepo) Create(ctx context.Context, userID string, baseLanguage, 
 	return &c, nil
 }
 
-func (r *PgCourseRepo) List(ctx context.Context, userID string) ([]*aggregate.Course, error) {
+func (r *PgCourseRepo) List(ctx context.Context, userID string) ([]*entity.Course, error) {
 	rows, err := r.pool.Query(ctx,
 		`SELECT id::text, user_id::text, base_language, learning_language, created_at
 		 FROM courses
@@ -45,8 +45,8 @@ func (r *PgCourseRepo) List(ctx context.Context, userID string) ([]*aggregate.Co
 		return nil, err
 	}
 
-	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (*aggregate.Course, error) {
-		var c aggregate.Course
+	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (*entity.Course, error) {
+		var c entity.Course
 		var base, learning string
 		if err := row.Scan(&c.ID, &c.UserID, &base, &learning, &c.CreatedAt); err != nil {
 			return nil, err
@@ -63,8 +63,8 @@ func (r *PgCourseRepo) List(ctx context.Context, userID string) ([]*aggregate.Co
 	})
 }
 
-func (r *PgCourseRepo) FindByID(ctx context.Context, userID, courseID string) (*aggregate.Course, error) {
-	var c aggregate.Course
+func (r *PgCourseRepo) FindByID(ctx context.Context, userID, courseID string) (*entity.Course, error) {
+	var c entity.Course
 	var base, learning string
 	err := r.pool.QueryRow(ctx,
 		`SELECT id::text, user_id::text, base_language, learning_language, created_at

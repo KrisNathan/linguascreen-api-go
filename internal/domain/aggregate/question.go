@@ -3,6 +3,7 @@ package aggregate
 import (
 	"time"
 
+	"github.com/KrisNathan/linguascreen-api-go/internal/domain/entity"
 	"github.com/KrisNathan/linguascreen-api-go/internal/domain/valueobject"
 	"github.com/KrisNathan/linguascreen-api-go/internal/errs"
 )
@@ -27,7 +28,7 @@ type Question struct {
 type QuestionDetail struct {
 	*Question
 	Vocab      *Vocab
-	Occurrence *Occurrence // fill_blank only
+	Occurrence *entity.Occurrence // fill_blank only
 }
 
 func (q *Question) Answer(idx int, now time.Time) error {

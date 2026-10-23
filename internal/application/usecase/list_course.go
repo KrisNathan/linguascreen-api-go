@@ -3,7 +3,7 @@ package usecase
 import (
 	"context"
 
-	"github.com/KrisNathan/linguascreen-api-go/internal/domain/aggregate"
+	"github.com/KrisNathan/linguascreen-api-go/internal/domain/entity"
 	"github.com/KrisNathan/linguascreen-api-go/internal/domain/repo"
 )
 
@@ -15,6 +15,6 @@ func NewListCourse(courseRepo repo.CourseRepo) *ListCourse {
 	return &ListCourse{courseRepo: courseRepo}
 }
 
-func (uc *ListCourse) Exec(ctx context.Context, userID string) ([]*aggregate.Course, error) {
+func (uc *ListCourse) Exec(ctx context.Context, userID string) ([]*entity.Course, error) {
 	return uc.courseRepo.List(ctx, userID)
 }

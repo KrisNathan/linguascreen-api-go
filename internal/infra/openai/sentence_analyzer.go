@@ -94,13 +94,13 @@ type llmPart struct {
 }
 
 func (o llmAnalysis) toAggregate() *aggregate.Analysis {
-	tokens := make([]aggregate.Token, len(o.Tokens))
+	tokens := make([]valueobject.Token, len(o.Tokens))
 	for i, t := range o.Tokens {
-		parts := make([]aggregate.Part, len(t.Parts))
+		parts := make([]valueobject.Part, len(t.Parts))
 		for j, p := range t.Parts {
-			parts[j] = aggregate.Part{Surface: p.Surface, DictForm: p.DictForm, Reading: p.Reading, Translation: p.Translation}
+			parts[j] = valueobject.Part{Surface: p.Surface, DictForm: p.DictForm, Reading: p.Reading, Translation: p.Translation}
 		}
-		tokens[i] = aggregate.Token{
+		tokens[i] = valueobject.Token{
 			Surface:     t.Surface,
 			Saveable:    t.Saveable,
 			DictForm:    t.DictForm,
